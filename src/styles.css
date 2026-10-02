@@ -574,8 +574,8 @@ footer {
   to { opacity: 0; visibility: hidden; transform: scale(1.035); }
 }
 @keyframes tileFloat {
-  from { translate: 0 0; }
-  to { translate: 0 -3px; }
+  from { translate: 0 1px; rotate: -.28deg; }
+  to { translate: 0 -4px; rotate: .28deg; }
 }
 @keyframes previewDrift {
   from { transform: scale(1.045) translate3d(-.7%, -.5%, 0) rotate(-.15deg); }
@@ -645,5 +645,5 @@ footer {
   .intro-splash { animation: introExit .2s .65s linear forwards !important; }
   .intro-progress span { animation: introProgress .65s linear forwards !important; }
   .project-tile,
-  .preview-surface { transform: none; translate: none; }
+  .preview-surface { transform: none; translate: none; rotate: none; }
 }
