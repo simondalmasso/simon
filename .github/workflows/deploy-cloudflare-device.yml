@@ -3,11 +3,13 @@ name: Cloudflare Deploy
 on:
   push:
     branches: [main]
-    paths:
-      - .github/workflows/deploy-cloudflare-device.yml
 
 permissions:
   contents: read
+
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: true
 
 jobs:
   deploy:
