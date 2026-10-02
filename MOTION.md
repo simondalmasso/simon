@@ -1,32 +1,25 @@
 # MOTION
 
-## Principles
+## Intro
 
-Motion expresses one narrative: approach → threshold → digital field. It never hijacks scrolling.
+The spectral orb is the only strong motion moment. It rotates, deforms and floats for roughly 3.6 seconds before the black intro layer dissolves into the project board. A discreet SKIP control remains available.
 
-## Door
+## Project board
 
-- Native document scroll remains in control; JavaScript only samples section progress through a passive scroll listener and one requestAnimationFrame per frame.
-- The door approaches, visibly opens on its left hinge, exposes a lit portal, and then scales past the viewer to create an entering-the-door transition.
-- No scroll hijacking, no canvas/WebGL and no continuous animation loop when the page is idle.
-- The implementation does not depend on CSS ScrollTimeline support.
+Panels use tiny transform offsets and slow alternate motion. The live previews drift inside their frames so the board feels active without becoming a carousel or hijacking scroll. Hover pauses the panel motion and lifts the selected card.
 
-## Hover/focus
+## Live previews
 
-Project cards shift by 6px and strengthen their boundary. Keyboard focus always uses a visible cold outline.
-
-## Ambient void
-
-One very slow conic sweep behind the digital void. Decorative only.
+Iframes are not all loaded at startup. IntersectionObserver assigns each preview source only when the card approaches the viewport. The preview itself is pointer-inert; clicking the card opens the real site in a new tab.
 
 ## Reduced motion
 
-`prefers-reduced-motion: reduce` disables the scroll choreography and looping motion, removes smooth scrolling and presents a clearly recognizable, partially open static door before projects.
+`prefers-reduced-motion: reduce` shortens the intro to under a second and effectively disables panel/preview animation.
 
 ## Mobile
 
-Shorter narrative height, larger door relative to viewport, no coordinate labels, single-column project flow.
+The desktop 12-column panel board becomes a two-column mosaic with selected full-width feature cards. The contact dock remains fixed and the footer reserves space so it never overlaps content.
 
 ## Performance
 
-No canvas, no animation library, no remote fonts, no image textures and no continuous JavaScript animation loop.
+No animation library, canvas, WebGL, external fonts or background video. The only continuous animations are CSS transforms/opacity, and offscreen previews stay unloaded until needed.

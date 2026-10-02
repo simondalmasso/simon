@@ -2,40 +2,38 @@
 
 ## Direction
 
-The page is a threshold, not a collection of portfolio effects. The signature is one door separating an organic near-black reality from a restrained digital void. Everything after the threshold is structural support.
+The site is an editorial work index rather than a conventional portfolio. The opening is a short spectral-orb ident, then the page resolves into an asymmetric panel board inspired by logistics/industrial identity systems: dense black surfaces, utilitarian labels, one acid accent and moving live product previews.
 
 ## Tokens
 
-- Background: `#08090a`
-- Soft background: `#0d0f11`
-- Primary text: `#f2f3f2`
-- Muted text: `#9ca2a8`
-- Structural line: `#2b3137`
-- Cold signal: `#cfe9ff`
-- Cold muted: `#72889b`
-- Max content width: `1180px`
-- Gutter: `clamp(20px, 5vw, 72px)`
+- Background: `#090909`
+- Board field: `#60615c`
+- Surface: `#0a0b0a`
+- Primary text: `#f5f5f0`
+- Muted text: `#a5a69e`
+- Structural line: `#292b28`
+- Accent: `#eaff1a`
+- Maximum board width: `1440px`
 
 ## Typography
 
-- Display/body: system sans stack. No remote fonts.
-- Utility: system monospace stack.
-- Hero is compressed through scale, negative tracking and short line lengths rather than an ornamental typeface.
+System sans for display/body and system monospace for utility labels. Large type is compact, tightly tracked and paired with very small operational labels.
 
-## Layout
+## First-load sequence
 
-Desktop: narrative threshold → centered corruption field → staggered 2-column project wave → linear capability rows → split about → contact.
+1. Full-black intro.
+2. Spectral torus/orb animates for about 3.6 seconds.
+3. Intro dissolves.
+4. The project board is immediately visible.
 
-Mobile: door remains the signature, project wave becomes one column, capability rows become index/content pairs, about collapses to a single flow.
+## Project board
+
+Eight requested live sites are presented inside asymmetric panels. Each card has a lazy-loaded, non-interactive iframe preview with a permanent project label and external-link hit target. If a remote site refuses framing, the project name remains visible as the fallback.
 
 ## Visual rules
 
-- 70% silence: near-black surfaces, negative space, few borders.
-- 20% structure: coordinates, grid, lines, project metadata.
-- 10% surprise: door threshold and project orbital geometry.
-- One luminous hue only.
-- No glassmorphism, gradient soup, neon cyberpunk palette, bento grid or decorative badge system.
-
-## Content rules
-
-Unverified factual content must remain visibly pending. Project cards can show verified names and destinations, but descriptions stay neutral until sourced.
+- One acid accent rather than a multi-color UI palette.
+- The spectral multi-color treatment belongs only to the opening ident.
+- Motion is subtle after the intro: panel breathing and slow preview drift.
+- No glassmorphism, fake metrics, generic tech claims, or AI positioning.
+- Contact is always reachable through a floating two-button dock.

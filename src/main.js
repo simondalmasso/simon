@@ -1,99 +1,87 @@
 import { projects } from './data/projects.js';
 
-const wave = document.querySelector('#project-wave');
+const intro = document.querySelector('#intro');
+const introSkip = document.querySelector('.intro-skip');
+const grid = document.querySelector('#project-grid');
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-if (wave) {
+function closeIntro() {
+  if (!intro || intro.classList.contains('is-skipped')) return;
+  intro.classList.add('is-skipped');
+  document.body.classList.remove('intro-active');
+}
+
+document.body.classList.add('intro-active');
+const introTimeout = window.setTimeout(
+  () => document.body.classList.remove('intro-active'),
+  reduceMotion.matches ? 720 : 3800
+);
+
+introSkip?.addEventListener('click', () => {
+  window.clearTimeout(introTimeout);
+  closeIntro();
+});
+
+intro?.addEventListener('animationend', event => {
+  if (event.animationName === 'introExit') {
+    document.body.classList.remove('intro-active');
+  }
+});
+
+if (grid) {
   projects.forEach((project, index) => {
     const article = document.createElement('article');
-    article.className = 'project-card';
+    article.className = 'project-tile';
     article.style.setProperty('--i', String(index));
     article.innerHTML = `
-      <a href="${project.href}" target="_blank" rel="noopener" aria-label="Open ${project.name}">
-        <div class="project-meta">
-          <span>${String(index + 1).padStart(2, '0')}</span>
-          <span>${project.status}</span>
-        </div>
-        <div class="project-orbit" aria-hidden="true">
-          <span class="orbit-core"></span>
-          <span class="orbit-line"></span>
-          <span class="orbit-node node-a"></span>
-          <span class="orbit-node node-b"></span>
-        </div>
-        <div class="project-copy">
-          <p>${project.type}</p>
-          <h3>${project.name}</h3>
-        </div>
-        <span class="project-open" aria-hidden="true">↗</span>
-      </a>`;
-    wave.appendChild(article);
+      <div class="preview-surface" aria-hidden="true">
+        <div class="preview-fallback">${project.name}</div>
+        <iframe
+          class="project-frame"
+          data-src="${project.href}"
+          title="${project.name} live preview"
+          loading="lazy"
+          tabindex="-1"
+          referrerpolicy="no-referrer"
+        ></iframe>
+      </div>
+      <div class="project-scrim" aria-hidden="true"></div>
+      <div class="project-meta">
+        <span>${String(index + 1).padStart(2, '0')}</span>
+        <span>LIVE WEB</span>
+      </div>
+      <h2 class="project-name">${project.name}</h2>
+      <span class="project-arrow" aria-hidden="true">↗</span>
+      <a class="project-link" href="${project.href}" target="_blank" rel="noopener" aria-label="Open ${project.name}"></a>
+    `;
+    grid.appendChild(article);
   });
 }
 
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const root = document.documentElement;
-const threshold = document.querySelector('.threshold');
-const approachState = document.querySelector('.approach-state');
-let rafId = 0;
+const frames = [...document.querySelectorAll('.project-frame')];
 
-const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
-const segment = (progress, start, end) => clamp((progress - start) / (end - start));
-
-function setMotionDefaults() {
-  root.dataset.motion = reduceMotion.matches ? 'reduced' : 'full';
-
-  if (reduceMotion.matches) {
-    root.style.removeProperty('--door-progress');
-    root.style.removeProperty('--door-open');
-    root.style.removeProperty('--door-scale');
-    root.style.removeProperty('--door-opacity');
-    root.style.removeProperty('--portal-opacity');
-    root.style.removeProperty('--hero-opacity');
-    root.style.removeProperty('--scene-y');
-    return;
-  }
-
-  updateThresholdScene();
-}
-
-function updateThresholdScene() {
-  rafId = 0;
-  if (!threshold || reduceMotion.matches) return;
-
-  const rect = threshold.getBoundingClientRect();
-  const travel = Math.max(1, threshold.offsetHeight - window.innerHeight);
-  const progress = clamp(-rect.top / travel);
-  const approach = segment(progress, 0, 0.48);
-  const opening = segment(progress, 0.28, 0.58);
-  const entering = segment(progress, 0.52, 0.95);
-  const fadeOut = segment(progress, 0.78, 1);
-  const heroFade = 1 - segment(progress, 0.1, 0.38);
-  const scale = 0.72 + (approach * 0.72) + (entering * 4.9);
-  const sceneY = 16 * (1 - approach);
-  const portalOpacity = 0.08 + (opening * 0.68) + (entering * 0.24);
-
-  root.style.setProperty('--door-progress', progress.toFixed(4));
-  root.style.setProperty('--door-open', opening.toFixed(4));
-  root.style.setProperty('--door-scale', scale.toFixed(4));
-  root.style.setProperty('--door-opacity', (1 - fadeOut * 0.92).toFixed(4));
-  root.style.setProperty('--portal-opacity', clamp(portalOpacity).toFixed(4));
-  root.style.setProperty('--hero-opacity', heroFade.toFixed(4));
-  root.style.setProperty('--scene-y', `${sceneY.toFixed(2)}vh`);
-
-  if (approachState) {
-    approachState.textContent = progress < 0.25
-      ? 'APPROACH THE DOOR'
-      : progress < 0.6
-        ? 'THE DOOR IS OPENING'
-        : 'ENTERING DIGITAL VOID';
+function loadFrame(frame) {
+  if (!frame.src && frame.dataset.src) {
+    frame.src = frame.dataset.src;
   }
 }
 
-function requestSceneUpdate() {
-  if (rafId || reduceMotion.matches) return;
-  rafId = requestAnimationFrame(updateThresholdScene);
+if ('IntersectionObserver' in window) {
+  const frameObserver = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        loadFrame(entry.target);
+        frameObserver.unobserve(entry.target);
+      }
+    }
+  }, { rootMargin: '320px 0px' });
+
+  frames.forEach(frame => frameObserver.observe(frame));
+} else {
+  frames.forEach(loadFrame);
 }
 
-setMotionDefaults();
-window.addEventListener('scroll', requestSceneUpdate, { passive: true });
-window.addEventListener('resize', requestSceneUpdate, { passive: true });
-reduceMotion.addEventListener?.('change', setMotionDefaults);
+document.documentElement.dataset.motion = reduceMotion.matches ? 'reduced' : 'full';
+reduceMotion.addEventListener?.('change', event => {
+  document.documentElement.dataset.motion = event.matches ? 'reduced' : 'full';
+});

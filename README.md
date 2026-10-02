@@ -1,12 +1,24 @@
 # SIMONweb
 
-Personal site for Simón Dalmasso.
+Personal work index for Simón Dalmasso.
 
-Production target: https://simon.simondalmasso44.workers.dev
+Production: https://simon.simondalmasso44.workers.dev
+
+## Positioning
+
+SOFTWARE · SYSTEMS · STORE · CRM · UX
 
 ## Stack
 
-Zero-dependency static site: semantic HTML, CSS and ES modules, deployed with Cloudflare Workers Static Assets.
+Zero-dependency static site: semantic HTML, CSS and ES modules deployed with Cloudflare Workers Static Assets.
+
+## Experience
+
+- 3–4 second spectral-orb intro
+- asymmetric live-project board
+- eight lazy-loaded website previews
+- direct email and WhatsApp contact
+- responsive and reduced-motion fallbacks
 
 ## Verification
 
@@ -17,15 +29,9 @@ npm run deploy:dry
 
 ## Architecture
 
-- `src/data/projects.js` — project data
-- `src/main.js` — minimal interaction and scroll state
-- `src/styles.css` — visual system and responsive motion
-- `DESIGN.md` — design tokens and visual rules
-- `MOTION.md` — motion contract and reduced-motion behavior
+- `src/data/projects.js` — verified project destinations
+- `src/main.js` — intro state, project rendering and iframe lazy-loading
+- `src/styles.css` — visual system and motion
+- `DESIGN.md` — visual contract
+- `MOTION.md` — motion/performance contract
 - `wrangler.toml` — Cloudflare Worker static-assets config
-
-No backend, database, paid API, remote font, WebGL, GSAP, React runtime, or required SaaS dependency.
-
-## Content boundary
-
-Unverified portfolio details remain explicitly marked as placeholders instead of inventing clients, metrics, achievements, or personal history.
