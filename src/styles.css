@@ -288,6 +288,10 @@ footer { width: min(var(--max), calc(100% - 2 * var(--gutter))); margin: 0 auto;
   footer { flex-direction: column; padding-bottom: 28px; }
 }
 
+@supports not (animation-timeline: scroll()) {
+  .door-wrap { animation: none; transform: scale(.95); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
@@ -296,8 +300,4 @@ footer { width: min(var(--max), calc(100% - 2 * var(--gutter))); margin: 0 auto;
   .door-wrap { position: absolute; top: auto; bottom: 10vh; margin: 0; left: 50%; transform: translateX(-50%) scale(.78); animation: none; }
   .approach-copy { display: none; }
   .corruption::before { animation: none; }
-}
-
-@supports not (animation-timeline: scroll()) {
-  .door-wrap { animation: none; transform: scale(.95); }
 }
