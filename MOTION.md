@@ -6,10 +6,10 @@ Motion expresses one narrative: approach → threshold → digital field. It nev
 
 ## Door
 
-- Native CSS scroll-driven animation when supported.
-- Scale from distant to oversized during natural document scroll.
-- No JavaScript scroll listeners, no layout reads, no WebGL.
-- Unsupported browsers receive a static door.
+- Native document scroll remains in control; JavaScript only samples section progress through a passive scroll listener and one requestAnimationFrame per frame.
+- The door approaches, visibly opens on its left hinge, exposes a lit portal, and then scales past the viewer to create an entering-the-door transition.
+- No scroll hijacking, no canvas/WebGL and no continuous animation loop when the page is idle.
+- The implementation does not depend on CSS ScrollTimeline support.
 
 ## Hover/focus
 
@@ -21,7 +21,7 @@ One very slow conic sweep behind the digital void. Decorative only.
 
 ## Reduced motion
 
-`prefers-reduced-motion: reduce` disables scroll-driven and looping motion, removes smooth scrolling and presents the door as a static threshold before projects.
+`prefers-reduced-motion: reduce` disables the scroll choreography and looping motion, removes smooth scrolling and presents a clearly recognizable, partially open static door before projects.
 
 ## Mobile
 

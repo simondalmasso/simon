@@ -16,6 +16,10 @@ const assertions = [
   ['no canvas', !/<canvas\b/.test(html)],
   ['no external font', !/@import\s+url|fonts\.googleapis/.test(css)],
   ['no eval', !/\beval\s*\(/.test(js)],
+  ['door has physical cues', /door-handle/.test(html) && /door-panel/.test(html)],
+  ['scroll door controller', /updateThresholdScene/.test(js) && /requestAnimationFrame/.test(js)],
+  ['email contact', /mailto:simondalmasso44@gmail\.com/.test(html)],
+  ['whatsapp contact', /wa\.me\/543425391278/.test(html)],
 ];
 
 for (const [name, ok] of assertions) {
