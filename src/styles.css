@@ -53,70 +53,55 @@ button { font: inherit; }
   place-items: center;
   overflow: hidden;
   background: #000;
-  animation: introExit .72s 3.15s cubic-bezier(.55,0,.2,1) forwards;
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition:
+    opacity .68s cubic-bezier(.55,0,.2,1),
+    transform .68s cubic-bezier(.55,0,.2,1),
+    visibility 0s linear .68s;
+}
+.intro-splash.is-exiting,
+.intro-splash.is-skipped {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.035);
+  pointer-events: none;
 }
 .intro-orb {
   position: relative;
-  width: clamp(150px, 31vw, 330px);
+  width: clamp(220px, 44vw, 500px);
   aspect-ratio: 1;
   border-radius: 50%;
-  animation: orbFloat 3.5s ease-in-out infinite alternate;
-  filter: drop-shadow(0 0 26px rgba(0,214,255,.14));
+  filter: drop-shadow(0 0 34px rgba(0,214,255,.16));
 }
-.orb-spectrum {
+.intro-canvas {
   position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    conic-gradient(from 132deg,
-      #00e7ff 0deg,
-      #1859ff 54deg,
-      #3a12e8 105deg,
-      #12091c 151deg,
-      #ff4f35 202deg,
-      #d9ff18 248deg,
-      #00d59a 307deg,
-      #00e7ff 360deg);
-  -webkit-mask: radial-gradient(circle at 53% 47%, transparent 0 30%, #000 39% 100%);
-  mask: radial-gradient(circle at 53% 47%, transparent 0 30%, #000 39% 100%);
-  filter: blur(3px) saturate(1.45);
-  animation: orbSpin 3.2s linear infinite, orbWarp 1.8s ease-in-out infinite alternate;
+  inset: -18%;
+  width: 136%;
+  height: 136%;
+  display: block;
 }
-.orb-spectrum::before,
-.orb-spectrum::after {
-  content: "";
+.orb-core {
   position: absolute;
+  inset: 29%;
   border-radius: 50%;
-}
-.orb-spectrum::before {
-  inset: 13%;
-  border: 18px solid rgba(0,208,255,.32);
-  filter: blur(15px);
-  transform: translate(-10%, 5%);
-}
-.orb-spectrum::after {
-  inset: 18%;
-  border: 13px solid rgba(205,255,21,.17);
-  filter: blur(10px);
-  transform: translate(13%, 7%);
-}
-.orb-shadow {
-  position: absolute;
-  inset: 17%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 42% 38%, rgba(9,12,24,.15), #020204 67%);
-  box-shadow: inset 24px 20px 40px rgba(0,0,0,.62);
+  background: radial-gradient(circle at 44% 40%, #091124 0, #030407 52%, #000 76%);
+  box-shadow:
+    inset 22px 18px 38px rgba(0,0,0,.74),
+    0 0 22px rgba(0,0,0,.82);
 }
 .orb-glint {
   position: absolute;
-  width: 42%;
-  height: 19%;
-  left: 17%;
-  top: 20%;
+  width: 48%;
+  height: 23%;
+  left: 13%;
+  top: 18%;
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(72,224,255,.5), transparent 70%);
-  filter: blur(14px);
+  background: radial-gradient(ellipse, rgba(62,224,255,.46), transparent 70%);
+  filter: blur(16px);
   transform: rotate(-28deg);
+  mix-blend-mode: screen;
 }
 .intro-meta {
   position: absolute;
@@ -143,7 +128,7 @@ button { font: inherit; }
   height: 100%;
   background: linear-gradient(90deg, #ff3e88, #fff);
   transform-origin: left;
-  animation: introProgress 3.55s linear forwards;
+  animation: introProgress 4.25s linear forwards;
 }
 .intro-skip {
   position: absolute;
@@ -156,7 +141,7 @@ button { font: inherit; }
   letter-spacing: .12em;
   cursor: pointer;
 }
-.intro-splash.is-skipped { animation: introExit .32s ease forwards; }
+
 
 .topbar {
   position: fixed;
@@ -205,7 +190,7 @@ button { font: inherit; }
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-auto-rows: clamp(82px, 7.7vw, 112px);
+  grid-auto-rows: clamp(78px, 7vw, 102px);
   gap: 10px;
 }
 .identity-tile,
@@ -219,7 +204,7 @@ button { font: inherit; }
 }
 .identity-tile {
   grid-column: span 4;
-  grid-row: span 5;
+  grid-row: span 4;
   padding: clamp(20px, 3vw, 38px);
   display: flex;
   flex-direction: column;
@@ -303,25 +288,35 @@ h1 {
 .projects-grid { display: contents; }
 .project-tile {
   --r: 0deg;
+  --kx: 0px;
+  --ky: 0px;
+  --kr: 0deg;
+  --ks: 1;
   grid-column: span 4;
   grid-row: span 2;
   isolation: isolate;
-  transform: rotate(var(--r));
-  animation: tileFloat 8s calc(var(--i) * -630ms) ease-in-out infinite alternate;
-  transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .2s ease;
+  transform: translate3d(var(--kx), var(--ky), 0) rotate(calc(var(--r) + var(--kr))) scale(var(--ks));
+  transition: border-color .2s ease, box-shadow .2s ease;
+  will-change: transform;
+  cursor: grab;
 }
 .project-tile:nth-child(1) { grid-column: 5 / span 4; grid-row: 1 / span 2; }
 .project-tile:nth-child(2) { grid-column: 5 / span 4; grid-row: 3 / span 2; --r: -.3deg; }
-.project-tile:nth-child(3) { grid-column: 9 / span 4; grid-row: 3 / span 3; --r: .25deg; }
-.project-tile:nth-child(4) { grid-column: 1 / span 4; grid-row: 6 / span 2; --r: -.25deg; }
+.project-tile:nth-child(3) { grid-column: 9 / span 4; grid-row: 3 / span 2; --r: .25deg; }
+.project-tile:nth-child(4) { grid-column: 1 / span 4; grid-row: 5 / span 3; --r: -.25deg; }
 .project-tile:nth-child(5) { grid-column: 5 / span 4; grid-row: 5 / span 3; --r: .18deg; }
-.project-tile:nth-child(6) { grid-column: 9 / span 4; grid-row: 6 / span 2; --r: -.2deg; }
+.project-tile:nth-child(6) { grid-column: 9 / span 4; grid-row: 5 / span 3; --r: -.2deg; }
 .project-tile:nth-child(7) { grid-column: 1 / span 6; grid-row: 8 / span 3; --r: .2deg; }
 .project-tile:nth-child(8) { grid-column: 7 / span 6; grid-row: 8 / span 3; --r: -.16deg; }
 .project-tile:hover {
-  animation-play-state: paused;
-  transform: translateY(-5px) rotate(0deg) scale(1.005);
-  border-color: rgba(234,255,26,.52);
+  border-color: rgba(234,255,26,.62);
+  box-shadow: 0 18px 46px rgba(0,0,0,.25);
+}
+.project-tile.is-dragging {
+  z-index: 20;
+  cursor: grabbing;
+  border-color: var(--acid);
+  box-shadow: 0 26px 70px rgba(0,0,0,.42);
 }
 .preview-surface {
   position: absolute;
@@ -560,31 +555,15 @@ footer {
   letter-spacing: .1em;
 }
 
-@keyframes orbSpin { to { transform: rotate(360deg); } }
-@keyframes orbWarp {
-  from { border-radius: 47% 53% 45% 55% / 53% 44% 56% 47%; transform: scale(.94) rotate(-3deg); }
-  to { border-radius: 56% 44% 54% 46% / 43% 57% 46% 54%; transform: scale(1.06) rotate(4deg); }
-}
-@keyframes orbFloat {
-  from { transform: translate3d(-5px, 7px, 0) rotate(-2deg); }
-  to { transform: translate3d(6px, -8px, 0) rotate(3deg); }
-}
 @keyframes introProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes introExit {
-  to { opacity: 0; visibility: hidden; transform: scale(1.035); }
-}
-@keyframes tileFloat {
-  from { translate: 0 1px; rotate: -.28deg; }
-  to { translate: 0 -4px; rotate: .28deg; }
-}
 @keyframes previewDrift {
   from { transform: scale(1.045) translate3d(-.7%, -.5%, 0) rotate(-.15deg); }
   to { transform: scale(1.075) translate3d(.8%, .55%, 0) rotate(.16deg); }
 }
 
 @media (max-width: 900px) {
-  .board { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: 86px; }
-  .identity-tile { grid-column: 1 / -1; grid-row: span 4; }
+  .board { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: 82px; }
+  .identity-tile { grid-column: 1 / -1; grid-row: span 3; }
   .statement-tile { grid-column: span 3; grid-row: span 2; }
   .project-tile:nth-child(n) { grid-column: span 3; grid-row: span 3; }
   .project-tile:nth-child(1) { grid-column: 1 / span 3; }
@@ -603,8 +582,8 @@ footer {
   .topbar nav { gap: 15px; }
   .topbar nav a { font-size: 8px; }
   .board-shell { padding: 64px 8px 8px; }
-  .board { gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 106px; }
-  .identity-tile { grid-column: 1 / -1; grid-row: span 4; padding: 24px; }
+  .board { gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 96px; }
+  .identity-tile { grid-column: 1 / -1; grid-row: span 3; padding: 20px; }
   .disciplines { max-width: 30ch; font-size: 9px; }
   h1 { font-size: clamp(52px, 16vw, 78px); }
   .identity-note { margin-top: 22px; font-size: 13px; }
@@ -642,8 +621,7 @@ footer {
     animation-iteration-count: 1 !important;
     transition-duration: .001ms !important;
   }
-  .intro-splash { animation: introExit .2s .65s linear forwards !important; }
-  .intro-progress span { animation: introProgress .65s linear forwards !important; }
-  .project-tile,
-  .preview-surface { transform: none; translate: none; rotate: none; }
+  .intro-progress span { animation-duration: 4.25s !important; }
+  .preview-surface { animation: none !important; transform: scale(1.04); }
+  .project-tile { transition-duration: .001ms !important; }
 }

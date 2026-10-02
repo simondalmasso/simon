@@ -2,7 +2,7 @@
 
 ## Direction
 
-The site is an editorial work index rather than a conventional portfolio. The opening is a short spectral-orb ident, then the page resolves into an asymmetric panel board inspired by logistics/industrial identity systems: dense black surfaces, utilitarian labels, one acid accent and moving live product previews.
+The site is an editorial work index rather than a conventional portfolio. The opening is a four-second spectral-flow ident, then the page resolves into a compact asymmetric panel board inspired by logistics/industrial identity systems: dense black surfaces, utilitarian labels, one acid accent and moving live product previews.
 
 ## Tokens
 
@@ -23,12 +23,12 @@ System sans for display/body and system monospace for utility labels. Large type
 
 1. Full-black intro.
 2. Spectral torus/orb animates for about 3.6 seconds.
-3. Intro dissolves.
-4. The project board is immediately visible.
+3. Intro dissolves after roughly 4.25 seconds.
+4. The compact project board appears immediately, with no oversized empty identity panel.
 
 ## Project board
 
-Eight requested live sites are presented inside asymmetric panels. Each card has a lazy-loaded, non-interactive iframe preview with a permanent project label and external-link hit target. If a remote site refuses framing, the project name remains visible as the fallback.
+Eight requested live sites are presented inside asymmetric kinetic panels. Each card drifts and rotates independently, reacts to pointer proximity, and can be briefly dragged on desktop. Each card has a lazy-loaded, non-interactive iframe preview with a permanent project label and external-link hit target. If a remote site refuses framing, the project name remains visible as the fallback.
 
 ## Visual rules
 

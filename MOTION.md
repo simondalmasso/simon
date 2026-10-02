@@ -2,24 +2,28 @@
 
 ## Intro
 
-The spectral orb is the only strong motion moment. It rotates, deforms and floats for roughly 3.6 seconds before the black intro layer dissolves into the project board. A discreet SKIP control remains available.
+The opening ident lasts about 4.25 seconds. A canvas-rendered spectral torus is built from dozens of animated light ribbons and orbiting points, producing visible rotation, deformation, hue travel and depth on a black field. The intro then dissolves into the work board. A SKIP control remains available.
 
-## Project board
+The timing is controlled in JavaScript rather than by a CSS media-query shortcut, so a browser cannot unexpectedly collapse the ident to a one-second flash.
 
-Panels use tiny transform offsets and slow alternate motion. The live previews drift inside their frames so the board feels active without becoming a carousel or hijacking scroll. Hover pauses the panel motion and lifts the selected card.
+## Kinetic project board
+
+The project cards are not static grid items. Each has an independent low-frequency drift on X/Y plus fractional rotation. Pointer proximity pushes nearby cards away slightly, making the board react as a field rather than a set of hover effects.
+
+On desktop, cards can also be dragged up to a bounded distance and released. They ease back toward their home zone while autonomous drift resumes. A drag gesture suppresses the following click; a normal click still opens the project.
 
 ## Live previews
 
-Iframes are not all loaded at startup. IntersectionObserver assigns each preview source only when the card approaches the viewport. The preview itself is pointer-inert; clicking the card opens the real site in a new tab.
+Iframes are loaded only when their tiles approach the viewport. The preview itself is pointer-inert; the whole tile is the external-link target.
 
 ## Reduced motion
 
-`prefers-reduced-motion: reduce` shortens the intro to under a second and effectively disables panel/preview animation.
+Reduced-motion keeps the full intro duration but reduces the spectral field's movement and disables autonomous card travel. This preserves the narrative without imposing large spatial motion.
 
 ## Mobile
 
-The desktop 12-column panel board becomes a two-column mosaic with selected full-width feature cards. The contact dock remains fixed and the footer reserves space so it never overlaps content.
+Touch scrolling is never captured for dragging. Mobile cards keep their mosaic layout and live previews without desktop drag behavior.
 
 ## Performance
 
-No animation library, canvas, WebGL, external fonts or background video. The only continuous animations are CSS transforms/opacity, and offscreen previews stay unloaded until needed.
+No animation library or WebGL. The spectral ident uses one short-lived 2D canvas loop. The board loop animates transforms only; iframe previews remain lazy-loaded.
