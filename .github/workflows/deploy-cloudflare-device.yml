@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 10
     env:
       WRANGLER_SEND_METRICS: "false"
+      LOGIN_LOG: /tmp/wrangler-device-login.log
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,12 +25,52 @@ jobs:
       - name: Verify exact source
         run: npm run verify
 
-      - name: Authorize Cloudflare
+      - name: Start Cloudflare device authorization
+        id: auth
+        background: true
+        run: |
+          set -o pipefail
+          npx --yes wrangler@4.119.0 login --device --browser=false 2>&1 | tee "$LOGIN_LOG"
+
+      - name: Capture device code
+        id: device
         run: |
           set -euo pipefail
-          echo "::notice::Authorize Wrangler with the Cloudflare device URL and code printed below."
-          npx --yes wrangler@4.119.0 login --device --browser=false
-          npx --yes wrangler@4.119.0 whoami
+          for i in $(seq 1 60); do
+            if grep -q 'enter the code' "$LOGIN_LOG" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          CODE="$(awk '
+            /enter the code:/ {
+              while (getline > 0) {
+                gsub(/[[:space:]]/, "", $0)
+                if (length($0) > 0) { print $0; exit }
+              }
+            }' "$LOGIN_LOG")"
+
+          URL="$(grep -Eo 'https://dash\.cloudflare\.com/oauth2/device(\?user_code=[A-Za-z0-9]+)?' "$LOGIN_LOG" | tail -1 || true)"
+
+          test -n "$CODE"
+          if [ -z "$URL" ]; then URL="https://dash.cloudflare.com/oauth2/device"; fi
+
+          printf 'URL=%s\nCODE=%s\n' "$URL" "$CODE" > /tmp/cloudflare-device.txt
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Publish device code
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-device-${{ steps.device.outputs.code }}
+          path: /tmp/cloudflare-device.txt
+          retention-days: 1
+
+      - name: Wait for Cloudflare authorization
+        wait: auth
+
+      - name: Confirm Cloudflare session
+        run: npx --yes wrangler@4.119.0 whoami
 
       - name: Deploy exact source
         run: npx --yes wrangler@4.119.0 deploy
