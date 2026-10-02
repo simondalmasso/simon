@@ -51,7 +51,7 @@ Live preview surfaces drift slowly within their clips. Their CSS loop pauses whe
 
 ## Reduced motion
 
-Reduced motion shortens the intro to 1.1 seconds, slows spectral movement, removes typographic travel, and disables kinetic board motion/drag.
+Reduced motion preserves the 6.7-second intro duration, slows spectral movement, removes typographic travel, and disables kinetic board motion/drag.
 
 ## Performance
 

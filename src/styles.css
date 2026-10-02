@@ -756,7 +756,7 @@ footer {
     animation-duration: .001ms !important;
     animation-iteration-count: 1 !important;
   }
-  .intro-progress span { animation: introProgress 1.1s linear forwards !important; }
+  .intro-progress span { animation: introProgress 6.7s linear forwards !important; }
   .preview-surface { animation: none !important; transform: scale(1.04); }
   .landing-tile,
   .project-tile { opacity: 1; translate: none; scale: 1; }

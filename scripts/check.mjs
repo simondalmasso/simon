@@ -31,7 +31,7 @@ const assertions = [
   ['email contact', /mailto:simondalmasso44@gmail\.com/.test(html)],
   ['whatsapp contact', /wa\.me\/543425391278/.test(html)],
   ['floating contact dock', /class="contact-dock"/.test(html)],
-  ['reduced motion', /prefers-reduced-motion:\s*reduce/.test(css) && /REDUCED_INTRO_MS = 1100/.test(js)],
+  ['reduced motion', /prefers-reduced-motion:\s*reduce/.test(css) && /REDUCED_INTRO_MS = 6700/.test(js)],
   ['visible focus', /focus-visible/.test(css)],
   ['no external font', !/@import\s+url|fonts\.googleapis/.test(css)],
   ['security headers', /Content-Security-Policy/.test(headers) && /X-Content-Type-Options:\s*nosniff/.test(headers)],

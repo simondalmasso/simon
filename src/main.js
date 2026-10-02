@@ -10,7 +10,7 @@ const board = document.querySelector('#project-board');
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const coarsePointer = window.matchMedia('(pointer: coarse)');
 const INTRO_MS = 6700;
-const REDUCED_INTRO_MS = 1100;
+const REDUCED_INTRO_MS = 6700;
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const smoothstep = value => {
