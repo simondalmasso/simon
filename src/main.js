@@ -142,13 +142,32 @@ function updateIntroTypography(now) {
     const enter = smoothstep((p - introStart) / (introEnd - introStart));
     const exit = smoothstep((p - .76 - index * .015) / .16);
     const live = 1 - exit;
-    const orbit = reduceMotion.matches ? 0 : 1;
 
-    const x = baseX * innerWidth * (1 - enter) + Math.sin(p * 8 + index * 1.7) * (8 + index * 2) * orbit;
-    const y = baseY * innerHeight * (1 - enter) + Math.cos(p * 7.4 + index * .9) * (6 + index) * orbit;
-    const z = mix(-260, 30 + index * 7, enter) + exit * 280;
-    const scale = mix(.72, 1, enter) + exit * .17;
-    const rotate = baseR * (1 - enter) + Math.sin(p * 5 + index) * .7 * orbit;
+    const targetX = baseX * innerWidth * .62;
+    const targetY = baseY * innerHeight * .66;
+
+    if (reduceMotion.matches) {
+      const fadeIn = smoothstep(p / .13);
+      const fadeOut = smoothstep((p - .72) / .2);
+      word.style.opacity = (fadeIn * (1 - fadeOut)).toFixed(3);
+      word.style.filter = 'none';
+      word.style.transform =
+        `translate3d(calc(-50% + ${targetX.toFixed(2)}px), calc(-50% + ${targetY.toFixed(2)}px), 0) scale(.86) rotate(${baseR.toFixed(2)}deg)`;
+      return;
+    }
+
+    const startX = targetX * 1.85;
+    const startY = targetY * 1.65;
+    const wobbleX = Math.sin(p * 8 + index * 1.7) * (7 + index * 1.5);
+    const wobbleY = Math.cos(p * 7.4 + index * .9) * (5 + index);
+    const exitPushX = targetX * .22 * exit;
+    const exitPushY = targetY * .16 * exit;
+
+    const x = mix(startX, targetX, enter) + wobbleX + exitPushX;
+    const y = mix(startY, targetY, enter) + wobbleY + exitPushY;
+    const z = mix(-260, 18 + index * 6, enter) + exit * 310;
+    const scale = mix(.7, .9, enter) + exit * .14;
+    const rotate = baseR * (1 - enter * .22) + Math.sin(p * 5 + index) * .55;
     const blur = (1 - enter) * 16 + exit * 14;
     const opacity = enter * live;
 
