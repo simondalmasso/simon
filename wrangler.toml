@@ -1,5 +1,6 @@
 name = "simon"
 compatibility_date = "2026-10-02"
+preview_urls = false
 
 [assets]
 directory = "./dist"
