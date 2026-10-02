@@ -1,0 +1,49 @@
+name: Cloudflare Device Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/deploy-cloudflare-device.yml
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify exact source
+        run: npm run verify
+
+      - name: Authorize Cloudflare
+        run: |
+          set -euo pipefail
+          echo "::notice::Authorize Wrangler with the Cloudflare device URL and code printed below."
+          npx --yes wrangler@4.119.0 login --device --browser=false
+          npx --yes wrangler@4.119.0 whoami
+
+      - name: Deploy exact source
+        run: npx --yes wrangler@4.119.0 deploy
+
+      - name: Verify production
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5; do
+            BODY="$(curl --fail --silent --show-error --max-time 20 'https://simon.simondalmasso44.workers.dev/?deploy_check='$(date +%s) || true)"
+            if printf '%s' "$BODY" | grep -Fq 'SIMÓN'; then
+              echo "LIVE_OK=YES"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "LIVE_OK=NO"
+          exit 1
