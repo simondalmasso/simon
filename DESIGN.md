@@ -2,38 +2,56 @@
 
 ## Direction
 
-The site is an editorial work index rather than a conventional portfolio. The opening is a four-second spectral-flow ident, then the page resolves into a compact asymmetric panel board inspired by logistics/industrial identity systems: dense black surfaces, utilitarian labels, one acid accent and moving live product previews.
+The site has two acts.
 
-## Tokens
+Act 1 is a 6.7-second cinematic ident: a dark spectral field, a central energy form and five spatial service statements — DESARROLLO A MEDIDA, SISTEMAS, UI / UX, INTEGRACIONES and VANGUARDIA. The words move through depth rather than appearing as slides.
 
-- Background: `#090909`
-- Board field: `#60615c`
+Act 2 is a compact kinetic work index. It borrows the clarity of industrial/logistics identity systems without copying a brand: graphite field, black surfaces, off-white type, one acid signal color, strong numbering and asymmetric composition.
+
+## Core tokens
+
+- Background: `#070807`
+- Board field: `#5f605a`
 - Surface: `#0a0b0a`
-- Primary text: `#f5f5f0`
-- Muted text: `#a5a69e`
-- Structural line: `#292b28`
+- Primary text: `#f4f5ef`
+- Muted text: `#a8aaa1`
+- Structural line: `#292b27`
 - Accent: `#eaff1a`
-- Maximum board width: `1440px`
+- Max board width: `1440px`
+- Ease-out: `cubic-bezier(.23, 1, .32, 1)`
+- On-screen movement: custom spring in JavaScript
 
 ## Typography
 
-System sans for display/body and system monospace for utility labels. Large type is compact, tightly tracked and paired with very small operational labels.
+System sans for display/body and system monospace for operational labels. Large typography is tightly tracked; utility copy uses positive tracking.
 
-## First-load sequence
+## Intro
 
-1. Full-black intro.
-2. Spectral torus/orb animates for about 3.6 seconds.
-3. Intro dissolves after roughly 4.25 seconds.
-4. The compact project board appears immediately, with no oversized empty identity panel.
+The canvas and typography share one requestAnimationFrame clock so they cannot drift apart. Text enters from authored 3D positions, settles around the center, then moves through depth and blurs out as the landing board materializes.
 
-## Project board
+The full-motion duration is 6.7 seconds. Reduced-motion deliberately shortens the intro to 1.1 seconds and removes spatial motion.
 
-Eight requested live sites are presented inside asymmetric kinetic panels. Each card drifts and rotates independently, reacts to pointer proximity, and can be briefly dragged on desktop. Each card has a lazy-loaded, non-interactive iframe preview with a permanent project label and external-link hit target. If a remote site refuses framing, the project name remains visible as the fallback.
+## Work board
 
-## Visual rules
+Eight verified project destinations appear in an asymmetric mosaic.
 
-- One acid accent rather than a multi-color UI palette.
-- The spectral multi-color treatment belongs only to the opening ident.
-- Motion is subtle after the intro: panel breathing and slow preview drift.
-- No glassmorphism, fake metrics, generic tech claims, or AI positioning.
-- Contact is always reachable through a floating two-button dock.
+Six can render live iframe previews. VOY and ZUNGUN currently send framing-denial headers, so their cards use intentional protected-preview graphics rather than broken browser frames. Their external links remain live.
+
+## Interaction
+
+- Board movement begins only after landing.
+- Autonomous drift runs only while the board is near the viewport.
+- Pointer proximity is eased rather than mapped directly.
+- Desktop project cards use pointer-captured drag with rubber-band resistance.
+- Release velocity feeds a damped spring back home.
+- Touch scrolling is never captured for drag.
+- Hover states exist only on hover-capable fine pointers.
+- Utility buttons use subtle press scaling.
+
+## Accessibility
+
+The SKIP INTRO button remains in the accessibility tree. Keyboard focus uses a high-contrast double ring. Reduced motion swaps spatial choreography for a short transition.
+
+## Security
+
+Cloudflare Static Assets ships CSP, HSTS, nosniff, anti-framing, restrictive referrer policy and permissions policy. CSP only enables frames from this portfolio's workers.dev project family.
