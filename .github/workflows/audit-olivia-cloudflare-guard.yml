@@ -123,3 +123,29 @@ jobs:
           echo "WORKER_SCRIPT_COUNT=$TOTAL"
           echo "AI_BOUND_SCRIPT_COUNT=$AI_COUNT"
           echo "OLIVIA_HAS_AI_BINDING=$OLIVIA_AI"
+
+
+      - name: Discover account analytics fields for AI usage
+        run: |
+          set -euo pipefail
+          cat > /tmp/graphql.json <<'JSON'
+          {"query":"query { __type(name: \"Account\") { fields { name } } }"}
+          JSON
+          STATUS="$(curl --silent --show-error --output /tmp/graphql-result.json --write-out '%{http_code}'             -X POST             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             -H 'Content-Type: application/json'             --data @/tmp/graphql.json             "https://api.cloudflare.com/client/v4/graphql")"
+          echo "GRAPHQL_HTTP=$STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "GRAPHQL_READ=NO"
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("/tmp/graphql-result.json").read_text())
+          fields=((((data.get("data") or {}).get("__type") or {}).get("fields")) or [])
+          names=sorted(f.get("name","") for f in fields if isinstance(f,dict))
+          matches=[n for n in names if any(k in n.lower() for k in ("ai","neuron","inference","billing","usage"))]
+          print("GRAPHQL_READ=YES" if not data.get("errors") else "GRAPHQL_READ=PARTIAL")
+          print("AI_ANALYTICS_FIELD_COUNT="+str(len(matches)))
+          for name in matches[:40]:
+              print("AI_ANALYTICS_FIELD="+name[:160])
+          PY
