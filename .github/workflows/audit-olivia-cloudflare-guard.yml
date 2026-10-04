@@ -76,3 +76,50 @@ jobs:
           print(f"ALL_WORKERS_GUARD_COUNT={all_workers}")
           print(f"WORKER_DESTINATION_APP_COUNT={worker_destinations}")
           PY
+
+
+      - name: Count Workers AI bindings without exposing script inventory
+        run: |
+          set -euo pipefail
+          STATUS="$(curl --silent --show-error --output /tmp/scripts.json --write-out '%{http_code}'             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts")"
+          echo "WORKER_LIST_HTTP=$STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "WORKER_LIST_READ=NO"
+            exit 0
+          fi
+          python - <<'PY' > /tmp/script-names.txt
+          import json
+          from pathlib import Path
+          data=json.loads(Path("/tmp/scripts.json").read_text())
+          for item in data.get("result") or []:
+              name=item.get("id")
+              if name:
+                  print(name)
+          PY
+          TOTAL=0
+          AI_COUNT=0
+          OLIVIA_AI=NO
+          while IFS= read -r SCRIPT; do
+            [ -n "$SCRIPT" ] || continue
+            TOTAL=$((TOTAL+1))
+            ENCODED="$(python -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$SCRIPT")"
+            S="$(curl --silent --show-error --output /tmp/script-settings.json --write-out '%{http_code}'               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"               "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$ENCODED/settings")"
+            [ "$S" = "200" ] || continue
+            HAS_AI="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("/tmp/script-settings.json").read_text())
+          bindings=(data.get("result") or {}).get("bindings") or []
+          print("YES" if any(b.get("type")=="ai" for b in bindings if isinstance(b,dict)) else "NO")
+          PY
+          )"
+            if [ "$HAS_AI" = "YES" ]; then
+              AI_COUNT=$((AI_COUNT+1))
+              if [ "$SCRIPT" = "0livia" ]; then OLIVIA_AI=YES; fi
+            fi
+          done < /tmp/script-names.txt
+          rm -f /tmp/script-names.txt /tmp/script-settings.json /tmp/scripts.json
+          echo "WORKER_LIST_READ=YES"
+          echo "WORKER_SCRIPT_COUNT=$TOTAL"
+          echo "AI_BOUND_SCRIPT_COUNT=$AI_COUNT"
+          echo "OLIVIA_HAS_AI_BINDING=$OLIVIA_AI"
