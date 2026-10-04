@@ -1,5 +1,8 @@
 name: Deploy 0liviA Full Stack
-# 0liviA source commit: 9e74e6d4c88e9dea1e72f34837f43887ac4f2ff1
+# Deployment is pinned and fails closed unless the source verifies an account-wide zero-cost guard.
+
+env:
+  OLIVIA_SOURCE_SHA: "653317b5241305fdbc62af4dc160c146d272d6e1"
 
 on:
   push:
@@ -28,7 +31,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: simondalmasso/0liviA
-          ref: arch/gpt-synthesis-v1
+          ref: ${{ env.OLIVIA_SOURCE_SHA }}
           path: olivia
 
       - uses: actions/setup-node@v4
@@ -44,6 +47,7 @@ jobs:
       - name: Verify exact 0liviA source
         run: |
           set -euo pipefail
+          test "$(git -C olivia rev-parse HEAD)" = "$OLIVIA_SOURCE_SHA"
           test -f olivia/web/index.html
           test -f olivia/cloudflare/worker.mjs
           grep -Fq '0liviA' olivia/web/index.html
@@ -51,14 +55,16 @@ jobs:
           grep -Fq "indexedDB.open" olivia/web/index.html
           grep -Fq 'MAX_CALLS_PER_UTC_DAY = 80' olivia/cloudflare/worker.mjs
           grep -Fq '@cf/qwen/qwen3-30b-a3b-fp8' olivia/cloudflare/worker.mjs
+          grep -Fq 'const ACCOUNT_ZERO_COST_VERIFIED = true;' olivia/cloudflare/worker.mjs
 
-      - name: Create zero-cost full-stack Worker config
+      - name: Create fail-closed full-stack Worker config
         working-directory: olivia
         run: |
           cat > wrangler.toml <<'EOF'
           name = "0livia"
           main = "./cloudflare/worker.mjs"
           compatibility_date = "2026-10-04"
+          compatibility_flags = ["global_fetch_strictly_public"]
           preview_urls = false
 
           [ai]
