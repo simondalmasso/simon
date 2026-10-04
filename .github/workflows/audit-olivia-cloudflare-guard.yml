@@ -1,0 +1,78 @@
+name: Audit 0liviA Cloudflare Guard
+
+on:
+  push:
+    branches:
+      - audit/olivia-cloudflare-guard
+    paths:
+      - .github/workflows/audit-olivia-cloudflare-guard.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Verify credentials exist
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Inspect Workers account mode
+        run: |
+          set -euo pipefail
+          STATUS="$(curl --silent --show-error --output /tmp/workers-settings.json --write-out '%{http_code}'             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/account-settings")"
+          echo "WORKERS_SETTINGS_HTTP=$STATUS"
+          if [ "$STATUS" = "200" ]; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("/tmp/workers-settings.json").read_text())
+          result=data.get("result") or {}
+          print("WORKERS_SETTINGS_READ=YES")
+          print("DEFAULT_USAGE_MODEL="+str(result.get("default_usage_model") or ""))
+          PY
+          else
+            echo "WORKERS_SETTINGS_READ=NO"
+          fi
+
+      - name: Inspect Access coverage without exposing account data
+        run: |
+          set -euo pipefail
+          STATUS="$(curl --silent --show-error --output /tmp/access-apps.json --write-out '%{http_code}'             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps?per_page=100")"
+          echo "ACCESS_HTTP=$STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "ACCESS_READ=NO"
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("/tmp/access-apps.json").read_text())
+          apps=data.get("result") or []
+          target="0livia.simondalmasso44.workers.dev"
+          domain_matches=0
+          all_workers=0
+          worker_destinations=0
+          for app in apps:
+              if str(app.get("domain") or "").lower()==target:
+                  domain_matches += 1
+              for dest in app.get("destinations") or []:
+                  typ=dest.get("type")
+                  if typ=="all_workers":
+                      all_workers += 1
+                  elif typ=="worker":
+                      worker_destinations += 1
+          print("ACCESS_READ=YES")
+          print(f"ACCESS_APP_COUNT={len(apps)}")
+          print(f"OLIVIA_DOMAIN_APP_COUNT={domain_matches}")
+          print(f"ALL_WORKERS_GUARD_COUNT={all_workers}")
+          print(f"WORKER_DESTINATION_APP_COUNT={worker_destinations}")
+          PY
