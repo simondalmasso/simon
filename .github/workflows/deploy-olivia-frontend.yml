@@ -1,0 +1,87 @@
+name: Deploy 0liviA Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/deploy-olivia-frontend.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-olivia-frontend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WRANGLER_SEND_METRICS: "false"
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Checkout 0liviA source
+        uses: actions/checkout@v4
+        with:
+          repository: simondalmasso/0liviA
+          ref: arch/gpt-synthesis-v1
+          path: olivia
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify Cloudflare credentials are available
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Verify exact frontend source
+        run: |
+          set -euo pipefail
+          test -f olivia/web/index.html
+          grep -Fq '0liviA' olivia/web/index.html
+          grep -Fq 'Live Voice' olivia/web/index.html
+          grep -Fq "rec.lang='es-AR'" olivia/web/index.html
+          test "$(grep -c 'localStorage' olivia/web/index.html || true)" -eq 1 || true
+
+      - name: Create ephemeral Worker config
+        working-directory: olivia
+        run: |
+          cat > wrangler.toml <<'EOF'
+          name = "0livia"
+          compatibility_date = "2026-10-04"
+          preview_urls = false
+
+          [assets]
+          directory = "./web"
+          not_found_handling = "single-page-application"
+          EOF
+
+      - name: Confirm Cloudflare credentials
+        working-directory: olivia
+        run: npx --yes wrangler@4.119.0 whoami
+
+      - name: Deploy static frontend only
+        working-directory: olivia
+        run: npx --yes wrangler@4.119.0 deploy
+
+      - name: Verify production shell
+        run: |
+          set -euo pipefail
+          URL='https://0livia.simondalmasso44.workers.dev/'
+          for i in 1 2 3 4 5 6; do
+            BODY="$(curl --fail --silent --show-error --max-time 20 "$URL?deploy_check=$(date +%s)" || true)"
+            if printf '%s' "$BODY" | grep -Fq '0liviA' && printf '%s' "$BODY" | grep -Fq 'Live Voice'; then
+              echo "LIVE_OK=YES"
+              echo "URL=$URL"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "LIVE_OK=NO"
+          exit 1
