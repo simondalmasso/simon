@@ -1,0 +1,58 @@
+name: Audit Cloudflare Zero-Cost Plan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/audit-cloudflare-plan.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Verify credentials exist
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Read account subscriptions safely
+        run: |
+          set -euo pipefail
+          STATUS="$(curl --silent --show-error --output /tmp/subscriptions.json --write-out '%{http_code}'             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             -H 'Content-Type: application/json'             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/subscriptions")"
+
+          if [ "$STATUS" != "200" ]; then
+            echo "BILLING_READ=NO"
+            echo "HTTP_STATUS=$STATUS"
+            exit 0
+          fi
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path("/tmp/subscriptions.json").read_text(encoding="utf-8"))
+          if not data.get("success"):
+              print("BILLING_READ=NO")
+              raise SystemExit(0)
+
+          print("BILLING_READ=YES")
+          result = data.get("result") or []
+          print(f"SUBSCRIPTION_COUNT={len(result)}")
+          for i, item in enumerate(result, 1):
+              plan = item.get("rate_plan") or {}
+              plan_id = str(plan.get("id") or "").replace("\n", " ")[:120]
+              public_name = str(plan.get("public_name") or "").replace("\n", " ")[:120]
+              state = str(item.get("state") or "").replace("\n", " ")[:80]
+              print(f"SUBSCRIPTION_{i}_PLAN_ID={plan_id}")
+              print(f"SUBSCRIPTION_{i}_PUBLIC_NAME={public_name}")
+              print(f"SUBSCRIPTION_{i}_STATE={state}")
+          PY
