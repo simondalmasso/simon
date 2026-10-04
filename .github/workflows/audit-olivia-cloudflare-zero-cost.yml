@@ -27,7 +27,18 @@ jobs:
       - name: Read account subscriptions without exposing credentials
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/subscriptions"             > /tmp/subscriptions.json
+          STATUS="$(curl --silent --show-error \
+            -o /tmp/subscriptions.json \
+            -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/subscriptions")"
+
+          if [ "$STATUS" = "403" ]; then
+            echo "ACCOUNT_ZERO_COST_VERIFIED=NO"
+            echo "REASON=billing_read_permission_unavailable"
+            exit 0
+          fi
+          test "$STATUS" = "200"
 
           python - <<'PY'
           import json
