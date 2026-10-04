@@ -1,0 +1,54 @@
+name: Audit 0liviA Cloudflare Zero Cost
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/audit-olivia-cloudflare-zero-cost.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Verify credentials exist
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Read account subscriptions without exposing credentials
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/subscriptions"             > /tmp/subscriptions.json
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          body = json.loads(Path("/tmp/subscriptions.json").read_text())
+          if body.get("success") is not True:
+              raise SystemExit("Cloudflare subscription API did not return success=true")
+
+          rows = []
+          for item in body.get("result") or []:
+              rate = item.get("rate_plan") or {}
+              rows.append({
+                  "subscription_id": item.get("id"),
+                  "state": item.get("state"),
+                  "price": item.get("price"),
+                  "rate_plan_id": rate.get("id"),
+                  "public_name": rate.get("public_name"),
+                  "scope": rate.get("scope"),
+                  "sets": rate.get("sets"),
+              })
+
+          print(json.dumps({"subscriptions": rows}, indent=2, sort_keys=True))
+          PY
