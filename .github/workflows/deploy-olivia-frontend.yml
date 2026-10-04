@@ -1,5 +1,5 @@
 name: Deploy 0liviA Frontend
-# 0liviA source commit: 95a782728b738e2195911bb61327ce24dcfdc1c0
+# 0liviA source commit: 2526c8a5cccbc9855328b3e349323c4f4e450c32
 
 on:
   push:
