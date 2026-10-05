@@ -92,14 +92,16 @@ jobs:
           for i in 1 2 3 4 5 6; do
             BODY="$(curl --fail --silent --show-error --max-time 20 "$URL/?deploy_check=$GITHUB_RUN_ID" || true)"
             HEALTH="$(curl --fail --silent --show-error --max-time 20 "$URL/healthz" || true)"
-            if printf '%s' "$BODY" | grep -Fq 'Self-hosted agentic AI workspace'               && printf '%s' "$HEALTH" | grep -Fq '"bridge_enabled":false'; then
+            if grep -Fq 'Self-hosted agentic AI workspace' <<<"$BODY"               && grep -Fq '"bridge_enabled":false' <<<"$HEALTH"; then
               break
             fi
             sleep 5
           done
-          printf '%s' "$BODY" | grep -Fq 'Self-hosted agentic AI workspace'
-          printf '%s' "$HEALTH" | grep -Fq '"bridge_enabled":false'
-          printf '%s' "$HEALTH" | grep -Fq '"provider_ready":false'
+          grep -Fq 'Self-hosted agentic AI workspace' <<<"$BODY"
+          grep -Fq '"bridge_enabled":false' <<<"$HEALTH"
+          grep -Fq '"provider_ready":false' <<<"$HEALTH"
+          grep -Fq '"inference_enabled":false' <<<"$HEALTH"
+          grep -Fq '"web_read":false' <<<"$HEALTH"
 
           STATUS="$(curl --silent --output /tmp/olivia-chat-disabled.json --write-out '%{http_code}'             --max-time 20             -H 'Content-Type: application/json'             -H "Origin: $URL"             --data '{"messages":[{"role":"user","content":"ping"}]}'             "$URL/api/chat")"
           test "$STATUS" = "503"
