@@ -62,6 +62,13 @@ jobs:
           compatibility_flags = ["global_fetch_strictly_public"]
           preview_urls = false
 
+          # CostGuard was provisioned by the historical bridge. Keep only the
+          # export declaration so Wrangler can reconcile that existing namespace.
+          # There is deliberately NO Durable Object binding in this public shell.
+          [exports.CostGuard]
+          type = "durable-object"
+          storage = "sqlite"
+
           [assets]
           directory = "./web"
           binding = "ASSETS"
