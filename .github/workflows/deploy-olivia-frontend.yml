@@ -1,8 +1,9 @@
-name: Deploy 0liviA Full Stack
-# Deployment is pinned and fails closed unless the source verifies an account-wide zero-cost guard.
+name: Deploy 0liviA Public Shell
+# Public demo shell only. No Workers AI, no Durable Object and no model/search quota.
+# Source must be an exact green 0liviA commit whose transitional bridge is disabled.
 
 env:
-  OLIVIA_SOURCE_SHA: "653317b5241305fdbc62af4dc160c146d272d6e1"
+  OLIVIA_SOURCE_SHA: "80f8ba00a337223d8cc73a07fcb770cd64fb9808"
 
 on:
   push:
@@ -14,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cloudflare-olivia-full-stack
+  group: cloudflare-olivia-public-shell
   cancel-in-progress: true
 
 jobs:
@@ -27,7 +28,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
-      - name: Checkout 0liviA source
+      - name: Checkout exact 0liviA source
         uses: actions/checkout@v4
         with:
           repository: simondalmasso/0liviA
@@ -38,26 +39,20 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify Cloudflare credentials are available
+      - name: Verify exact fail-closed public shell source
         run: |
           set -euo pipefail
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
-
-      - name: Verify exact 0liviA source
-        run: |
-          set -euo pipefail
           test "$(git -C olivia rev-parse HEAD)" = "$OLIVIA_SOURCE_SHA"
           test -f olivia/web/index.html
           test -f olivia/cloudflare/worker.mjs
-          grep -Fq '0liviA' olivia/web/index.html
-          grep -Fq "rec.lang='es-AR'" olivia/web/index.html
-          grep -Fq "indexedDB.open" olivia/web/index.html
-          grep -Fq 'MAX_CALLS_PER_UTC_DAY = 80' olivia/cloudflare/worker.mjs
-          grep -Fq '@cf/qwen/qwen3-30b-a3b-fp8' olivia/cloudflare/worker.mjs
-          grep -Fq 'const ACCOUNT_ZERO_COST_VERIFIED = true;' olivia/cloudflare/worker.mjs
+          grep -Fq '0liviA — Self-hosted agentic AI workspace' olivia/web/index.html
+          grep -Fq 'const TRANSITIONAL_BRIDGE_ENABLED = false;' olivia/cloudflare/worker.mjs
+          grep -Fq 'error: "bridge_disabled"' olivia/cloudflare/worker.mjs
+          grep -Fq 'provider_ready: TRANSITIONAL_BRIDGE_ENABLED &&' olivia/cloudflare/worker.mjs
 
-      - name: Create fail-closed full-stack Worker config
+      - name: Create static-shell Worker config
         working-directory: olivia
         run: |
           cat > wrangler.toml <<'EOF'
@@ -67,17 +62,6 @@ jobs:
           compatibility_flags = ["global_fetch_strictly_public"]
           preview_urls = false
 
-          [ai]
-          binding = "AI"
-
-          [[durable_objects.bindings]]
-          name = "COST_GUARD"
-          class_name = "CostGuard"
-
-          [exports.CostGuard]
-          type = "durable-object"
-          storage = "sqlite"
-
           [assets]
           directory = "./web"
           binding = "ASSETS"
@@ -85,34 +69,33 @@ jobs:
           run_worker_first = ["/api/*", "/healthz"]
           EOF
 
-      - name: Confirm Cloudflare credentials
-        working-directory: olivia
-        run: npx --yes wrangler@4.119.0 whoami
-
-      - name: Deploy frontend + zero-cost chat core
+      - name: Deploy public shell with AI disabled
         working-directory: olivia
         run: npx --yes wrangler@4.119.0 deploy
 
-      - name: Verify production shell and real chat
+      - name: Verify shell is live and inference is disabled
         run: |
           set -euo pipefail
           URL='https://0livia.simondalmasso44.workers.dev'
+          BODY=''
+          HEALTH=''
           for i in 1 2 3 4 5 6; do
-            BODY="$(curl --fail --silent --show-error --max-time 20 "$URL/?deploy_check=$(date +%s)" || true)"
+            BODY="$(curl --fail --silent --show-error --max-time 20 "$URL/?deploy_check=$GITHUB_RUN_ID" || true)"
             HEALTH="$(curl --fail --silent --show-error --max-time 20 "$URL/healthz" || true)"
-            if printf '%s' "$BODY" | grep -Fq '0liviA' && printf '%s' "$HEALTH" | grep -Fq '"provider_ready":true'; then
+            if printf '%s' "$BODY" | grep -Fq 'Self-hosted agentic AI workspace'               && printf '%s' "$HEALTH" | grep -Fq '"bridge_enabled":false'; then
               break
             fi
             sleep 5
           done
-          printf '%s' "$BODY" | grep -Fq '0liviA'
-          printf '%s' "$HEALTH" | grep -Fq '"hard_zero_cost":true'
+          printf '%s' "$BODY" | grep -Fq 'Self-hosted agentic AI workspace'
+          printf '%s' "$HEALTH" | grep -Fq '"bridge_enabled":false'
+          printf '%s' "$HEALTH" | grep -Fq '"provider_ready":false'
 
-          curl --fail --silent --show-error --max-time 60             -H 'Content-Type: application/json'             -H "Origin: $URL"             --data '{"messages":[{"role":"user","content":"Respondé solamente OK"}]}'             "$URL/api/chat" > /tmp/olivia-chat.sse
+          STATUS="$(curl --silent --output /tmp/olivia-chat-disabled.json --write-out '%{http_code}'             --max-time 20             -H 'Content-Type: application/json'             -H "Origin: $URL"             --data '{"messages":[{"role":"user","content":"ping"}]}'             "$URL/api/chat")"
+          test "$STATUS" = "503"
+          grep -Fq '"bridge_disabled"' /tmp/olivia-chat-disabled.json
 
-          grep -Fq 'data:' /tmp/olivia-chat.sse
-          ! grep -Fq '"error"' /tmp/olivia-chat.sse
-          echo "LIVE_OK=YES"
-          echo "CHAT_OK=YES"
-          echo "ZERO_COST_GUARD=YES"
+          echo "PUBLIC_SHELL_OK=YES"
+          echo "INFERENCE_DISABLED=YES"
+          echo "SOURCE_SHA=$OLIVIA_SOURCE_SHA"
           echo "URL=$URL/"
