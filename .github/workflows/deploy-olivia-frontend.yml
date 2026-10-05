@@ -3,7 +3,7 @@ name: Deploy 0liviA Public Shell
 # Source must be an exact green 0liviA commit whose transitional bridge is disabled.
 
 env:
-  OLIVIA_SOURCE_SHA: "80f8ba00a337223d8cc73a07fcb770cd64fb9808"
+  OLIVIA_SOURCE_SHA: "4ad53fdfd6e1664763c73ea5847582ba2ed99157"
 
 on:
   push:
@@ -50,7 +50,10 @@ jobs:
           grep -Fq '0liviA — Self-hosted agentic AI workspace' olivia/web/index.html
           grep -Fq 'const TRANSITIONAL_BRIDGE_ENABLED = false;' olivia/cloudflare/worker.mjs
           grep -Fq 'error: "bridge_disabled"' olivia/cloudflare/worker.mjs
-          grep -Fq 'provider_ready: TRANSITIONAL_BRIDGE_ENABLED &&' olivia/cloudflare/worker.mjs
+          grep -Fq 'const PUBLIC_SHELL_ONLY = true;' olivia/cloudflare/worker.mjs
+          grep -Fq 'provider_ready: false' olivia/cloudflare/worker.mjs
+          grep -Fq 'inference_enabled: false' olivia/cloudflare/worker.mjs
+          grep -Fq 'web_read: false' olivia/cloudflare/worker.mjs
 
       - name: Create static-shell Worker config
         working-directory: olivia
