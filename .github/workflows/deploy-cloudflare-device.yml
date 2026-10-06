@@ -1,8 +1,17 @@
 name: Cloudflare Deploy
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - index.html
+      - _headers
+      - package.json
+      - wrangler.toml
+      - scripts/build.mjs
+      - scripts/check.mjs
+      - src/**
 
 permissions:
   contents: read
