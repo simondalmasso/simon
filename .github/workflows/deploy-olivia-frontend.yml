@@ -3,7 +3,7 @@ name: Deploy 0liviA Public Shell
 # Source must be an exact green 0liviA commit whose transitional bridge is disabled.
 
 env:
-  OLIVIA_SOURCE_SHA: "4ad53fdfd6e1664763c73ea5847582ba2ed99157"
+  OLIVIA_SOURCE_SHA: "67587abfec0bf776c19257e971675d7807f5fa24"
 
 on:
   push:
