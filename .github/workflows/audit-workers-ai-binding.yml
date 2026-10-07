@@ -27,28 +27,32 @@ jobs:
           cat > /tmp/probe.mjs <<'JS'
           export default {
             async fetch(_request, env) {
-              try {
-                const result = await env.AI.run("@cf/zai-org/glm-4.7-flash", {
-                  messages: [
-                    { role: "system", content: "Reply briefly." },
-                    { role: "user", content: "Reply exactly OLIVIA_BINDING_OK" }
-                  ]
-                });
-                const choice = result?.choices?.[0];
-                const answer = String(choice?.message?.content ?? result?.response ?? "").trim();
-                return Response.json({
-                  ok: true,
-                  answer_present: Boolean(answer),
-                  answer: answer.slice(0, 120),
-                  result_keys: Object.keys(result || {}).slice(0, 20)
-                });
-              } catch (error) {
-                return Response.json({
-                  ok: false,
-                  name: String(error?.name || ""),
-                  message: String(error?.message || error).slice(0, 500)
-                }, { status: 503 });
+              const messages = [
+                { role: "system", content: "Reply briefly." },
+                { role: "user", content: "Reply exactly OLIVIA_BINDING_OK" }
+              ];
+              const variants = [
+                ["minimal", { messages }],
+                ["max_completion", { messages, max_completion_tokens: 64 }],
+                ["full", { messages, max_completion_tokens: 64, temperature: 0.4, stream: false }]
+              ];
+              const rows = [];
+              for (const [name, input] of variants) {
+                try {
+                  const result = await env.AI.run("@cf/zai-org/glm-4.7-flash", input);
+                  const choice = result?.choices?.[0];
+                  const answer = String(choice?.message?.content ?? result?.response ?? "").trim();
+                  rows.push({ name, ok: true, answer_present: Boolean(answer), answer: answer.slice(0, 80) });
+                } catch (error) {
+                  rows.push({
+                    name,
+                    ok: false,
+                    error_name: String(error?.name || ""),
+                    error_message: String(error?.message || error).slice(0, 300)
+                  });
+                }
               }
+              return Response.json({ rows });
             }
           };
           JS
