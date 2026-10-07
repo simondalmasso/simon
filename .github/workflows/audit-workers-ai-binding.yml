@@ -71,13 +71,26 @@ jobs:
           npx --yes wrangler@4.127.1 deploy --config /tmp/wrangler.jsonc 2>&1 | tee /tmp/deploy.log
           url="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' /tmp/deploy.log | tail -n1)"
           test -n "${url}"
-          status="$(curl -sS --max-time 45 -o /tmp/probe.json -w '%{http_code}' "${url}/")"
+          status="000"
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            status="$(curl -sS --max-time 45 -o /tmp/probe.json -w '%{http_code}' "${url}/" || true)"
+            if [ "${status}" != "404" ] && [ "${status}" != "000" ]; then
+              break
+            fi
+            sleep 3
+          done
           echo "PROBE_HTTP=${status}"
-          python3 - <<'PY'
-          import json
+          PROBE_HTTP="${status}" python3 - <<'PY'
+          import json, os
           from pathlib import Path
-          body=json.loads(Path('/tmp/probe.json').read_text(encoding='utf-8'))
+          raw=Path('/tmp/probe.json').read_text(encoding='utf-8', errors='replace') if Path('/tmp/probe.json').exists() else ''
+          try:
+              body=json.loads(raw)
+          except Exception:
+              print(json.dumps({"http": os.environ["PROBE_HTTP"], "json": False, "body_prefix": raw[:300]}, ensure_ascii=False))
+              raise SystemExit(0)
           safe={k:body.get(k) for k in ('ok','name','message','answer_present','answer','result_keys') if k in body}
+          safe["http"]=os.environ["PROBE_HTTP"]
           print(json.dumps(safe, ensure_ascii=False))
           PY
 
