@@ -1,9 +1,8 @@
 name: Deploy 0liviA Public Shell
-# Public demo shell only. No Workers AI, no Durable Object and no model/search quota.
-# Source must be an exact green 0liviA commit whose transitional bridge is disabled.
 
 env:
-  OLIVIA_SOURCE_SHA: "eee3f26885f13bc14073e3a7c1d7a1851e7a4883"
+  OLIVIA_SOURCE_SHA: "857831403ae1507376942b6a1ec61b5c0d65fbf0"
+  PUBLIC_URL: "https://0livia.simondalmasso44.workers.dev"
 
 on:
   push:
@@ -16,12 +15,12 @@ permissions:
 
 concurrency:
   group: cloudflare-olivia-public-shell
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       WRANGLER_SEND_METRICS: "false"
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -29,85 +28,174 @@ jobs:
 
     steps:
       - name: Checkout exact 0liviA source
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: simondalmasso/0liviA
           ref: ${{ env.OLIVIA_SOURCE_SHA }}
           path: olivia
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: 22
+          node-version: "24.14.0"
 
-      - name: Verify exact fail-closed public shell source
+      - name: Verify exact source and fail-closed boundaries
+        shell: bash
         run: |
           set -euo pipefail
-          test -n "$CLOUDFLARE_API_TOKEN"
-          test -n "$CLOUDFLARE_ACCOUNT_ID"
-          test "$(git -C olivia rev-parse HEAD)" = "$OLIVIA_SOURCE_SHA"
-          test -f olivia/web/index.html
-          test -f olivia/cloudflare/worker.mjs
-          grep -Fq '0liviA — Self-hosted agentic AI workspace' olivia/web/index.html
-          grep -Fq 'const TRANSITIONAL_BRIDGE_ENABLED = false;' olivia/cloudflare/worker.mjs
-          grep -Fq 'error: "bridge_disabled"' olivia/cloudflare/worker.mjs
+          test -n "${CLOUDFLARE_API_TOKEN:-}"
+          test -n "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test "$(git -C olivia rev-parse HEAD)" = "${OLIVIA_SOURCE_SHA}"
           grep -Fq 'const PUBLIC_SHELL_ONLY = true;' olivia/cloudflare/worker.mjs
+          grep -Fq 'const TRANSITIONAL_BRIDGE_ENABLED = false;' olivia/cloudflare/worker.mjs
           grep -Fq 'provider_ready: false' olivia/cloudflare/worker.mjs
           grep -Fq 'inference_enabled: false' olivia/cloudflare/worker.mjs
-          grep -Fq 'web_read: false' olivia/cloudflare/worker.mjs
+          grep -Fq 'url.pathname === "/api/demo-chat"' olivia/cloudflare/worker.mjs
+          grep -Fq '@cf/zai-org/glm-4.7-flash' olivia/cloudflare/worker.mjs
+          grep -Fq 'OLIVIA_DEMO_ZERO_COST_CONFIRMED' olivia/cloudflare/worker.mjs
+          grep -Fq 'Probar 0liviA ahora' olivia/web/index.html
+          ! grep -Fq 'id="modeChat"' olivia/web/index.html
+          ! grep -Fq 'id="modeWork"' olivia/web/index.html
 
-      - name: Create static-shell Worker config
+      - name: Build exact Wrangler config
         working-directory: olivia
+        shell: bash
         run: |
-          cat > wrangler.toml <<'EOF'
-          name = "0livia"
-          main = "./cloudflare/worker.mjs"
-          compatibility_date = "2026-10-04"
-          compatibility_flags = ["global_fetch_strictly_public"]
-          preview_urls = false
+          cat > wrangler.deploy.jsonc <<'JSON'
+          {
+            "name": "0livia",
+            "main": "./cloudflare/worker.mjs",
+            "compatibility_date": "2026-10-04",
+            "compatibility_flags": ["global_fetch_strictly_public"],
+            "workers_dev": true,
+            "preview_urls": false,
+            "assets": {
+              "directory": "./web",
+              "binding": "ASSETS"
+            },
+            "vars": {
+              "OLIVIA_DEMO_ZERO_COST_CONFIRMED": "1"
+            },
+            "ai": {
+              "binding": "AI"
+            },
+            "durable_objects": {
+              "bindings": [
+                {
+                  "name": "COST_GUARD",
+                  "class_name": "CostGuard"
+                }
+              ]
+            },
+            "exports": {
+              "CostGuard": {
+                "type": "durable-object",
+                "storage": "sqlite"
+              }
+            }
+          }
+          JSON
 
-          # CostGuard was provisioned by the historical bridge. Keep only the
-          # export declaration so Wrangler can reconcile that existing namespace.
-          # There is deliberately NO Durable Object binding in this public shell.
-          [exports.CostGuard]
-          type = "durable-object"
-          storage = "sqlite"
-
-          [assets]
-          directory = "./web"
-          binding = "ASSETS"
-          not_found_handling = "single-page-application"
-          run_worker_first = ["/api/*", "/healthz"]
-          EOF
-
-      - name: Deploy public shell with AI disabled
+      - name: Deploy exact public shell
         working-directory: olivia
-        run: npx --yes wrangler@4.119.0 deploy
-
-      - name: Verify shell is live and inference is disabled
+        shell: bash
         run: |
           set -euo pipefail
-          URL='https://0livia.simondalmasso44.workers.dev'
-          BODY=''
-          HEALTH=''
-          for i in 1 2 3 4 5 6; do
-            BODY="$(curl --fail --silent --show-error --max-time 20 "$URL/?deploy_check=$GITHUB_RUN_ID" || true)"
-            HEALTH="$(curl --fail --silent --show-error --max-time 20 "$URL/healthz" || true)"
-            if grep -Fq 'Self-hosted agentic AI workspace' <<<"$BODY"               && grep -Fq '"bridge_enabled":false' <<<"$HEALTH"; then
-              break
-            fi
-            sleep 5
-          done
-          grep -Fq 'Self-hosted agentic AI workspace' <<<"$BODY"
-          grep -Fq '"bridge_enabled":false' <<<"$HEALTH"
-          grep -Fq '"provider_ready":false' <<<"$HEALTH"
-          grep -Fq '"inference_enabled":false' <<<"$HEALTH"
-          grep -Fq '"web_read":false' <<<"$HEALTH"
+          npx --yes wrangler@4.127.1 deploy --config wrangler.deploy.jsonc --keep-vars --message "0liviA public demo main@${OLIVIA_SOURCE_SHA}" 2>&1 | tee /tmp/olivia-wrangler.log
 
-          STATUS="$(curl --silent --output /tmp/olivia-chat-disabled.json --write-out '%{http_code}'             --max-time 20             -H 'Content-Type: application/json'             -H "Origin: $URL"             --data '{"messages":[{"role":"user","content":"ping"}]}'             "$URL/api/chat")"
-          test "$STATUS" = "503"
-          grep -Fq '"bridge_disabled"' /tmp/olivia-chat-disabled.json
+      - name: Cache-busted production smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          cb="$(date +%s)"
+          root="$(curl -fsS --max-time 20 "${PUBLIC_URL}/?cb=${cb}")"
+          printf '%s' "${root}" | grep -Fq '0liviA — Tu IA personal'
+          printf '%s' "${root}" | grep -Fq 'Probar 0liviA ahora'
+          ! printf '%s' "${root}" | grep -Fq 'id="modeChat"'
+          ! printf '%s' "${root}" | grep -Fq 'id="modeWork"'
 
-          echo "PUBLIC_SHELL_OK=YES"
-          echo "INFERENCE_DISABLED=YES"
-          echo "SOURCE_SHA=$OLIVIA_SOURCE_SHA"
-          echo "URL=$URL/"
+          health="$(curl -fsS --max-time 20 "${PUBLIC_URL}/healthz?cb=${cb}")"
+          HEALTH_JSON="${health}" python3 - <<'PY'
+          import json, os
+          body = json.loads(os.environ["HEALTH_JSON"])
+          checks = {
+              "process_alive": body.get("process_alive") is True,
+              "api_mode": body.get("api_mode") == "public_shell",
+              "public_shell": body.get("public_shell") is True,
+              "bridge_enabled": body.get("bridge_enabled") is False,
+              "provider_ready": body.get("provider_ready") is False,
+              "inference_enabled": body.get("inference_enabled") is False,
+              "demo_inference_enabled": body.get("demo_inference_enabled") is True,
+              "demo_provider_ready": body.get("demo_provider_ready") is True,
+              "demo_provider": body.get("demo_provider") == "workers-ai-demo",
+              "demo_model": body.get("demo_model") == "@cf/zai-org/glm-4.7-flash",
+              "hard_zero_cost": body.get("hard_zero_cost") is True,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit("health failed: " + ", ".join(failed))
+          PY
+
+          chat_status="$(curl -sS --max-time 20 -o /tmp/chat.json -w '%{http_code}'             -X POST "${PUBLIC_URL}/api/chat?cb=${cb}"             -H 'Content-Type: application/json'             --data '{"messages":[{"role":"user","content":"ping"}]}')"
+          test "${chat_status}" = "503"
+          grep -Fq '"bridge_disabled"' /tmp/chat.json
+
+          demo_status="$(curl -sS --max-time 45 -o /tmp/demo.json -w '%{http_code}'             -X POST "${PUBLIC_URL}/api/demo-chat?cb=${cb}"             -H 'Content-Type: application/json'             --data '{"messages":[{"role":"user","content":"Respondé exactamente: OLIVIA_SMOKE_OK"}]}')"
+          test "${demo_status}" = "200"
+          DEMO_JSON="$(cat /tmp/demo.json)" python3 - <<'PY'
+          import json, os
+          body = json.loads(os.environ["DEMO_JSON"])
+          answer = str(body.get("answer") or "").strip()
+          if not answer:
+              raise SystemExit("empty demo answer")
+          if body.get("provider") != "workers-ai-demo":
+              raise SystemExit("unexpected provider")
+          if body.get("model") != "@cf/zai-org/glm-4.7-flash":
+              raise SystemExit("unexpected model")
+          if body.get("canonical") is not False:
+              raise SystemExit("demo marked canonical")
+          print("DEMO_SMOKE=PASS")
+          PY
+
+      - name: Install pinned tester-army e2e runner
+        working-directory: olivia
+        run: |
+          npm install --no-save --package-lock=false             e2e@0.18.0             @e2e-dev/web@0.13.0             playwright-core@1.63.0
+          npx e2e-web install chromium --with-deps
+
+      - name: Live production e2e
+        working-directory: olivia
+        env:
+          E2E_TELEMETRY_DISABLED: "1"
+          OLIVIA_E2E_URL: ${{ env.PUBLIC_URL }}
+          OLIVIA_E2E_LIVE: "1"
+        run: npx e2e run tests-e2e/public-demo.e2e.ts --reporter list
+
+      - name: Upload E2E evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: olivia-production-e2e
+          path: |
+            olivia/.e2e/report.json
+            olivia/.e2e/artifacts
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Summary
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "PUBLIC_SHELL_OK=YES"
+            echo "SOURCE_SHA=${OLIVIA_SOURCE_SHA}"
+            echo "URL=${PUBLIC_URL}/"
+            echo "MODEL=@cf/zai-org/glm-4.7-flash"
+            echo "CANONICAL_CHAT_DISABLED=YES"
+            echo "LIVE_E2E=PASS"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Remove generated config
+        if: always()
+        shell: bash
+        run: rm -f olivia/wrangler.deploy.jsonc
