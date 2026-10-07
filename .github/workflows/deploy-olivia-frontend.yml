@@ -1,7 +1,7 @@
 name: Deploy 0liviA Public Shell
 
 env:
-  OLIVIA_SOURCE_SHA: "857831403ae1507376942b6a1ec61b5c0d65fbf0"
+  OLIVIA_SOURCE_SHA: "942fffb18572aa2b4f54ddabd4acb1c9c0d01610"
   PUBLIC_URL: "https://0livia.simondalmasso44.workers.dev"
 
 on:
