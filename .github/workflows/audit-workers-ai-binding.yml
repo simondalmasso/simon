@@ -33,8 +33,10 @@ jobs:
               ];
               const variants = [
                 ["minimal", { messages }],
-                ["max_completion", { messages, max_completion_tokens: 64 }],
-                ["full", { messages, max_completion_tokens: 64, temperature: 0.4, stream: false }]
+                ["max_completion_256", { messages, max_completion_tokens: 256 }],
+                ["max_completion_512", { messages, max_completion_tokens: 512 }],
+                ["max_completion_1024", { messages, max_completion_tokens: 1024 }],
+                ["max_tokens_256", { messages, max_tokens: 256 }]
               ];
               const rows = [];
               for (const [name, input] of variants) {
@@ -42,7 +44,13 @@ jobs:
                   const result = await env.AI.run("@cf/zai-org/glm-4.7-flash", input);
                   const choice = result?.choices?.[0];
                   const answer = String(choice?.message?.content ?? result?.response ?? "").trim();
-                  rows.push({ name, ok: true, answer_present: Boolean(answer), answer: answer.slice(0, 80) });
+                  rows.push({
+                    name,
+                    ok: true,
+                    answer_present: Boolean(answer),
+                    answer: answer.slice(0, 80),
+                    usage: result?.usage || null
+                  });
                 } catch (error) {
                   rows.push({
                     name,
