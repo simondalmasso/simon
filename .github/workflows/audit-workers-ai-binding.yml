@@ -93,7 +93,7 @@ jobs:
           except Exception:
               print(json.dumps({"http": os.environ["PROBE_HTTP"], "json": False, "body_prefix": raw[:300]}, ensure_ascii=False))
               raise SystemExit(0)
-          safe={k:body.get(k) for k in ('ok','name','message','answer_present','answer','result_keys') if k in body}
+          safe={k:body.get(k) for k in ('ok','name','message','answer_present','answer','result_keys','rows') if k in body}
           safe["http"]=os.environ["PROBE_HTTP"]
           print(json.dumps(safe, ensure_ascii=False))
           PY
