@@ -1,0 +1,88 @@
+name: Audit Workers AI Binding
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/audit-workers-ai-binding.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24.14.0"
+
+      - name: Create minimal binding probe
+        shell: bash
+        run: |
+          cat > /tmp/probe.mjs <<'JS'
+          export default {
+            async fetch(_request, env) {
+              try {
+                const result = await env.AI.run("@cf/zai-org/glm-4.7-flash", {
+                  messages: [
+                    { role: "system", content: "Reply briefly." },
+                    { role: "user", content: "Reply exactly OLIVIA_BINDING_OK" }
+                  ]
+                });
+                const choice = result?.choices?.[0];
+                const answer = String(choice?.message?.content ?? result?.response ?? "").trim();
+                return Response.json({
+                  ok: true,
+                  answer_present: Boolean(answer),
+                  answer: answer.slice(0, 120),
+                  result_keys: Object.keys(result || {}).slice(0, 20)
+                });
+              } catch (error) {
+                return Response.json({
+                  ok: false,
+                  name: String(error?.name || ""),
+                  message: String(error?.message || error).slice(0, 500)
+                }, { status: 503 });
+              }
+            }
+          };
+          JS
+          cat > /tmp/wrangler.jsonc <<'JSON'
+          {
+            "name": "olivia-ai-binding-probe",
+            "main": "./probe.mjs",
+            "compatibility_date": "2026-10-04",
+            "workers_dev": true,
+            "preview_urls": false,
+            "ai": { "binding": "AI" }
+          }
+          JSON
+
+      - name: Deploy and call probe
+        working-directory: /tmp
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.127.1 deploy --config /tmp/wrangler.jsonc 2>&1 | tee /tmp/deploy.log
+          url="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' /tmp/deploy.log | tail -n1)"
+          test -n "${url}"
+          status="$(curl -sS --max-time 45 -o /tmp/probe.json -w '%{http_code}' "${url}/")"
+          echo "PROBE_HTTP=${status}"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          body=json.loads(Path('/tmp/probe.json').read_text(encoding='utf-8'))
+          safe={k:body.get(k) for k in ('ok','name','message','answer_present','answer','result_keys') if k in body}
+          print(json.dumps(safe, ensure_ascii=False))
+          PY
+
+      - name: Remove probe worker
+        if: always()
+        shell: bash
+        run: |
+          npx --yes wrangler@4.127.1 delete olivia-ai-binding-probe --force || true
