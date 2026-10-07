@@ -1,0 +1,40 @@
+name: Audit 0liviA Public Demo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/audit-olivia-public-demo.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe permanent public demo
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://0livia.simondalmasso44.workers.dev'
+          status="$(curl -sS --max-time 45 -o /tmp/demo.json -w '%{http_code}'             -X POST "${url}/api/demo-chat?cb=${GITHUB_RUN_ID}"             -H 'Content-Type: application/json'             --data '{"messages":[{"role":"user","content":"Respondé exactamente: OLIVIA_PROBE_OK"}]}')"
+          echo "DEMO_HTTP_STATUS=${status}"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          raw=Path('/tmp/demo.json').read_text(encoding='utf-8', errors='replace')
+          try:
+              body=json.loads(raw)
+          except Exception:
+              print('DEMO_JSON=INVALID')
+              print('DEMO_BODY_PREFIX='+raw[:300].replace('\n',' '))
+              raise SystemExit(0)
+          safe={}
+          for key in ('error','message','provider','model','canonical'):
+              if key in body:
+                  safe[key]=str(body.get(key))[:300]
+          safe['answer_present']=bool(str(body.get('answer') or '').strip())
+          print(json.dumps(safe, ensure_ascii=False))
+          PY
