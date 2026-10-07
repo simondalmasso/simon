@@ -56,3 +56,5 @@ jobs:
               print(f"SUBSCRIPTION_{i}_PUBLIC_NAME={public_name}")
               print(f"SUBSCRIPTION_{i}_STATE={state}")
           PY
+
+# audit-trigger: 2026-10-07
