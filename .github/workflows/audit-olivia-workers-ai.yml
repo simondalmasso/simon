@@ -1,0 +1,55 @@
+name: Audit 0liviA Workers AI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/audit-olivia-workers-ai.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Verify credentials exist
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN:-}"
+          test -n "${CLOUDFLARE_ACCOUNT_ID:-}"
+
+      - name: Call GLM 4.7 Flash directly
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl -sS --max-time 45             -o /tmp/ai.json             -w '%{http_code}'             -X POST             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"             -H 'Content-Type: application/json'             --data '{"messages":[{"role":"user","content":"Respond exactly: OLIVIA_AI_DIRECT_OK"}],"max_completion_tokens":64,"temperature":0.2}'             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/zai-org/glm-4.7-flash")"
+          echo "DIRECT_AI_HTTP=${status}"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("/tmp/ai.json")
+          try:
+              body=json.loads(p.read_text(encoding="utf-8"))
+          except Exception:
+              print("DIRECT_AI_JSON=INVALID")
+              raise SystemExit(0)
+          safe={
+              "success": body.get("success"),
+              "errors": [
+                  {"code": e.get("code"), "message": str(e.get("message",""))[:300]}
+                  for e in (body.get("errors") or [])[:5]
+              ],
+          }
+          result=body.get("result")
+          if isinstance(result, dict):
+              choices=result.get("choices") or []
+              safe["has_choices"]=bool(choices)
+              if choices:
+                  safe["answer"]=str(((choices[0].get("message") or {}).get("content") or ""))[:120]
+          print(json.dumps(safe, ensure_ascii=False))
+          PY
