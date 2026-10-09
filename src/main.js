@@ -52,7 +52,7 @@ const rotations = [0, -.3, .25, -.25, .18, -.2, .2, -.16];
 const isMobile = () => coarsePointer.matches || innerWidth <= 620;
 const states = [...document.querySelectorAll('.project-tile')].map((tile, index) => ({
   tile, index, baseRotation: rotations[index] || 0, phase: index * 1.71,
-  speed: .00012 + (index % 4) * .000018,
+  speed: .00049 + (index % 4) * .00005,
   x: 0, y: 0, vx: 0, vy: 0,
   targetX: 0, targetY: 0, pushX: 0, pushY: 0,
   dragging: false, moved: false, candidate: false,
@@ -75,15 +75,28 @@ let boardVisible = false;
 let boardRaf = 0;
 let lastFrame = performance.now();
 let hovered = null;
+let lastConnectionRender = 0;
+const ambientStart = performance.now();
+
+// A short, sequential impulse travels between neighboring tiles.
+// It deliberately animates only one or two cards at once.
+function relayEnvelope(seconds, index) {
+  const cycle = seconds % 7.4;
+  const progress = (cycle - 1.15 - index * .37) / .95;
+  if (progress <= 0 || progress >= 1) return 0;
+  return Math.sin(Math.PI * progress);
+}
 
 function clearField() {
   hovered = null;
+  board?.classList.remove('is-exploring');
   links.classList.remove('is-active');
   states.forEach(s => { s.tile.classList.remove('is-magnetic'); s.targetX = 0; s.targetY = 0; });
 }
 
 function renderField(active) {
   if (!board || !active || reduceMotion.matches || isMobile()) return;
+  board.classList.add('is-exploring');
   const box = board.getBoundingClientRect();
   if (box.width < 1 || box.height < 1) return;
   const center = el => {
@@ -114,7 +127,14 @@ function renderField(active) {
 function applyPointerField(event) {
   if (reduceMotion.matches || isMobile() || !boardVisible) return;
   const active = event.target.closest?.('.project-tile');
-  if (active) hovered = active;
+  if (active) {
+    hovered = active;
+    const rect = active.getBoundingClientRect();
+    const px = clamp(((event.clientX - rect.left) / rect.width) * 100, 0, 100);
+    const py = clamp(((event.clientY - rect.top) / rect.height) * 100, 0, 100);
+    active.style.setProperty('--spot-x', px.toFixed(1) + '%');
+    active.style.setProperty('--spot-y', py.toFixed(1) + '%');
+  }
   if (hovered) renderField(hovered);
   for (const s of states) {
     const rect = s.tile.getBoundingClientRect();
@@ -129,6 +149,16 @@ function applyPointerField(event) {
 }
 board?.addEventListener('pointermove',applyPointerField,{ passive: true });
 board?.addEventListener('pointerleave',clearField);
+board?.addEventListener('focusin',event=>{
+  const tile=event.target.closest?.('.project-tile');
+  if (tile && !reduceMotion.matches && !isMobile()) {
+    hovered=tile;
+    renderField(tile);
+  }
+});
+board?.addEventListener('focusout',event=>{
+  if(!board.contains(event.relatedTarget)) clearField();
+});
 
 for (const s of states) {
   const {tile} = s;
@@ -176,7 +206,10 @@ for (const s of states) {
 }
 
 function renderStill() {
-  states.forEach(s => { s.tile.style.transform=`rotate(${s.baseRotation}deg)`; });
+  states.forEach(s => {
+    s.tile.style.transform=`rotate(${s.baseRotation}deg)`;
+    s.tile.classList.remove('is-in-wave');
+  });
   clearField();
 }
 
@@ -197,12 +230,19 @@ function animateBoard(now) {
     s.pushX+=(s.targetX-s.pushX)*follow;
     s.pushY+=(s.targetY-s.pushY)*follow;
     const t=now*s.speed;
-    const amplitude=isMobile()?.33:1;
-    const autoX=Math.sin(t+s.phase)*(13+s.index%3*5)*amplitude;
-    const autoY=Math.cos(t*1.17+s.phase*.73)*(9+s.index%4*4)*amplitude;
-    const rotation=s.baseRotation+Math.sin(t*.81+s.phase)*.34*amplitude;
-    const scale=s.tile.matches(':hover') && !s.dragging ? 1.012:1;
+    const amplitude=isMobile()?.32:1;
+    const relay=relayEnvelope((now-ambientStart)/1000,s.index) * amplitude;
+    const autoX=Math.sin(t+s.phase)*(8+s.index%3*3)*amplitude + relay*(s.index%2?2.5:-2.5);
+    const autoY=Math.cos(t*1.17+s.phase*.73)*(7+s.index%4*2)*amplitude - relay*13;
+    const rotation=s.baseRotation+Math.sin(t*.81+s.phase)*.36*amplitude + relay*(s.index%2?.75:-.75);
+    const scale=(s.tile.matches(':hover') || s.tile.matches(':focus-within'))&&!s.dragging ? 1.022:1;
+    s.tile.classList.toggle('is-in-wave',relay>.32 && !s.dragging);
     s.tile.style.transform=`translate3d(${(s.x+s.pushX+autoX).toFixed(2)}px,${(s.y+s.pushY+autoY).toFixed(2)}px,0) rotate(${rotation.toFixed(3)}deg) scale(${scale})`;
+  }
+  // Lines follow moving neighbors even when the pointer is stationary.
+  if(hovered && now-lastConnectionRender>75) {
+    renderField(hovered);
+    lastConnectionRender=now;
   }
   boardRaf=requestAnimationFrame(animateBoard);
 }
@@ -211,6 +251,7 @@ function syncLoop() {
   if(board)board.dataset.active=shouldRun?'true':'false';
   if(shouldRun&&!boardRaf){lastFrame=performance.now();boardRaf=requestAnimationFrame(animateBoard);}
   if(!shouldRun&&boardRaf){cancelAnimationFrame(boardRaf);boardRaf=0;}
+  if(!shouldRun)states.forEach(s=>s.tile.classList.remove('is-in-wave'));
   if(reduceMotion.matches)renderStill();
 }
 if(board && 'IntersectionObserver' in window) {

@@ -61,7 +61,17 @@ async function checkCase(label,width,height,reduced=false) {
     await page.keyboard.press('Tab');
     assert.equal(await page.evaluate(()=>document.activeElement?.className),'skip-link','keyboard skip link');
     if(width>900&&!reduced){
-      await page.waitForTimeout(350);
+      const card = page.locator('.project-tile').first();
+      const animation = await card.evaluate(el=>getComputedStyle(el).animationName);
+      assert.ok(animation.includes('tile-arrive'),'staggered arrival animation');
+      await page.waitForTimeout(950);
+      const before = await card.evaluate(el=>getComputedStyle(el).transform);
+      await page.waitForTimeout(1050);
+      const after = await card.evaluate(el=>getComputedStyle(el).transform);
+      assert.notEqual(before,after,'autonomous motion is perceptible');
+      const waveCount = await page.locator('.project-tile.is-in-wave').count();
+      assert.ok(waveCount<=3,'wave never moves most tiles at once');
+      
       const rect=await page.locator('.project-tile').first().boundingBox();
       assert.ok(rect,'tile has bounds');
       await page.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.5);
@@ -70,6 +80,8 @@ async function checkCase(label,width,height,reduced=false) {
       assert.ok(await page.locator('.project-tile.is-magnetic').count()>1,'neighbor response');
     }
     if(reduced){
+      const anim = await page.locator('.project-tile').first().evaluate(el=>getComputedStyle(el).animationName);
+      assert.equal(anim,'none','reduced motion disables arrival movement');
       await page.waitForTimeout(150);
       assert.equal(await page.locator('.board[data-active="false"]').count(),1,'reduced motion pauses board');
     }

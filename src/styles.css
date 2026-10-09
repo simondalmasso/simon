@@ -197,15 +197,36 @@ h1 {
   fill: none; stroke: var(--acid); stroke-width: 2; stroke-linecap: round;
   stroke-dasharray: 4 7; filter: drop-shadow(0 0 7px rgba(234,255,26,.45));
 }
-.project-tile.is-magnetic { border-color: rgba(234,255,26,.65); box-shadow: 0 8px 36px rgba(0,0,0,.24); }
+.project-tile.is-magnetic {
+  border-color: rgba(234,255,26,.78);
+  box-shadow: 0 14px 42px rgba(0,0,0,.28),0 0 0 1px rgba(234,255,26,.12);
+}
+.project-tile.is-in-wave {
+  border-color: rgba(234,255,26,.27);
+  box-shadow: 0 10px 28px rgba(0,0,0,.18);
+}
+.board-links.is-active path { animation: connection-flow 900ms linear infinite; }
+@keyframes connection-flow { to { stroke-dashoffset: -22; } }
 .identity-tile,.statement-tile,.project-tile { z-index: 2; }
 .project-tile {
   --r: 0deg;
+  --spot-x: 50%;
+  --spot-y: 50%;
   grid-column: span 4;
   grid-row: span 2;
   isolation: isolate;
   transform: rotate(var(--r));
+  /* Entry is separate from the JS-driven transform. No layout shift. */
+  animation: tile-arrive 690ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 55ms + 80ms);
+  transition: border-color 180ms ease,box-shadow 180ms ease;
 }
+@keyframes tile-arrive {
+  from { opacity: 0; translate: 0 27px; scale: .965; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+.identity-tile { animation: tile-arrive 720ms var(--ease-out) both; }
+.statement-tile { animation: tile-arrive 720ms var(--ease-out) 140ms both; }
 .project-tile:nth-child(1) { grid-column: 5 / span 4; grid-row: 1 / span 2; }
 .project-tile:nth-child(2) { grid-column: 5 / span 4; grid-row: 3 / span 2; --r: -.3deg; }
 .project-tile:nth-child(3) { grid-column: 9 / span 4; grid-row: 3 / span 2; --r: .25deg; }
@@ -278,6 +299,16 @@ h1 {
     linear-gradient(135deg, rgba(0,0,0,.14), transparent 40%);
   pointer-events: none;
 }
+/* Light moves across the active preview, not over the project label. */
+.project-tile::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--spot-x) var(--spot-y),
+    rgba(234,255,26,.23),rgba(234,255,26,.055) 29%,transparent 63%);
+  opacity: 0;
+  transition: opacity 220ms var(--ease-out);
+}
 .project-meta {
   position: absolute;
   z-index: 4;
@@ -318,9 +349,12 @@ h1 {
   background: var(--acid);
   color: var(--acid-ink);
   font-size: 16px;
+  transition: transform 180ms var(--ease-out), background-color 180ms ease;
 }
+.project-tile.is-in-wave .project-arrow { transform: rotate(30deg) scale(1.08); }
 .project-link { position: absolute; z-index: 5; inset: 0; }
 .project-tile.is-dragging {
+  animation-play-state: paused;
   z-index: 20;
   border-color: var(--acid);
   box-shadow: 0 26px 70px rgba(0,0,0,.42);
@@ -331,7 +365,7 @@ h1 {
 .project-link:focus-visible,
 .topbar a:focus-visible,
 .contact-link:focus-visible,
-.contact-dock a:focus-visible, {
+.contact-dock a:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--acid);
 }
@@ -483,8 +517,13 @@ footer {
 @media (hover: hover) and (pointer: fine) {
   .project-tile { cursor: grab; }
   .project-tile:hover {
-    border-color: rgba(234,255,26,.62);
+    border-color: rgba(234,255,26,.8);
     box-shadow: 0 18px 46px rgba(0,0,0,.25);
+  }
+  .project-tile:hover::after { opacity: 1; }
+  .project-tile:hover .project-arrow { transform: rotate(45deg) scale(1.08); }
+  .board.is-exploring .project-tile:not(.is-magnetic) .project-poster {
+    filter: saturate(.73);
   }
   .project-tile.is-dragging { cursor: grabbing; }
   .topbar nav a:hover::after { right: 0; }
@@ -551,6 +590,13 @@ footer {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .project-tile,.identity-tile,.statement-tile {
+    animation: none !important;
+    opacity: 1 !important;
+    translate: 0 0 !important;
+    scale: 1 !important;
+  }
+  .board-links.is-active path { animation: none !important; }
   *, *::before, *::after {
     transition-duration: .001ms !important;
     animation-duration: .001ms !important;
