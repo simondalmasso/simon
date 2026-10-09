@@ -1,516 +1,225 @@
 import { projects } from './data/projects.js';
 
-const intro = document.querySelector('#intro');
-const introSkip = document.querySelector('.intro-skip');
-const introCanvas = document.querySelector('#intro-canvas');
-const introWords = [...document.querySelectorAll('[data-intro-word]')];
-const introPhase = document.querySelector('#intro-phase');
 const grid = document.querySelector('#project-grid');
 const board = document.querySelector('#project-board');
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const coarsePointer = window.matchMedia('(pointer: coarse)');
-const INTRO_MS = 6700;
-const REDUCED_INTRO_MS = 6700;
-
-const clamp01 = value => Math.max(0, Math.min(1, value));
-const smoothstep = value => {
-  const x = clamp01(value);
-  return x * x * (3 - 2 * x);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const coarsePointer = matchMedia('(pointer: coarse)');
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const rubberBand = (value, limit = 74) => {
+  if (Math.abs(value) <= limit) return value;
+  return Math.sign(value) * (limit + (Math.abs(value) - limit) * .32);
 };
-const mix = (a, b, t) => a + (b - a) * t;
 
-document.body.classList.add('intro-active');
-if (board) board.dataset.active = 'false';
-
-let introClosed = false;
-let introClosedAt = Number.POSITIVE_INFINITY;
-let previewInitStarted = false;
-const introStartedAt = performance.now();
-
-function initProjectGrid() {
-  if (!grid) return;
-
+if (grid) {
   projects.forEach((project, index) => {
-    const blocked = project.embeddable === false;
-    const preview = blocked
-      ? `<div class="preview-fallback is-policy-blocked">
-          <span>${project.name}</span>
-          <small>LIVE PREVIEW PROTECTED · OPEN SITE</small>
-        </div>`
-      : `<div class="preview-fallback">
-          <span>${project.name}</span>
-          <small>LOADING LIVE SITE</small>
-        </div>
-        <iframe
-          class="project-frame"
-          data-src="${project.href}"
-          title="${project.name} live preview"
-          loading="lazy"
-          tabindex="-1"
-          referrerpolicy="no-referrer"
-        ></iframe>`;
-
-    const article = document.createElement('article');
-    article.className = 'project-tile';
-    article.style.setProperty('--i', String(index));
-    article.innerHTML = `
-      <div class="preview-surface" aria-hidden="true">${preview}</div>
-      <div class="project-scrim" aria-hidden="true"></div>
-      <div class="project-meta">
-        <span>${String(index + 1).padStart(2, '0')}</span>
-        <span>LIVE WEB</span>
+    const tile = document.createElement('article');
+    tile.className = 'project-tile';
+    tile.style.setProperty('--i', String(index));
+    tile.innerHTML = `
+      <div class="preview-surface" aria-hidden="true">
+        <div class="preview-fallback"><span>${project.name}</span><small>EXPLORAR PROYECTO ↗</small></div>
+        <img class="project-poster" data-src="/previews/${project.id}.jpg" alt="" loading="lazy" decoding="async">
       </div>
+      <div class="project-scrim" aria-hidden="true"></div>
+      <div class="project-meta"><span>${String(index + 1).padStart(2, '0')}</span><span>LIVE WEB</span></div>
       <h2 class="project-name">${project.name}</h2>
       <span class="project-arrow" aria-hidden="true">↗</span>
-      <a class="project-link" href="${project.href}" target="_blank" rel="noopener" aria-label="Open ${project.name}"></a>
-    `;
-    grid.appendChild(article);
+      <a class="project-link" href="${project.href}" target="_blank" rel="noopener"
+        aria-label="Abrir ${project.name}"></a>`;
+    grid.appendChild(tile);
   });
 }
 
-initProjectGrid();
-
-function initFrames() {
-  const frames = [...document.querySelectorAll('.project-frame')];
-  const loadFrame = frame => {
-    if (!frame.src && frame.dataset.src) frame.src = frame.dataset.src;
-  };
-
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          loadFrame(entry.target);
-          observer.unobserve(entry.target);
-        }
-      }
-    }, { rootMargin: '180px 0px' });
-
-    frames.forEach(frame => observer.observe(frame));
-  } else {
-    frames.forEach(loadFrame);
-  }
-}
-
-function schedulePreviewInit() {
-  if (previewInitStarted) return;
-  previewInitStarted = true;
-  const run = () => initFrames();
-
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(run, { timeout: 650 });
-  } else {
-    window.setTimeout(run, 120);
-  }
-}
-
-function closeIntro(skip = false) {
-  if (!intro || introClosed) return;
-  introClosed = true;
-  introClosedAt = performance.now();
-  intro.classList.add(skip ? 'is-skipped' : 'is-exiting');
-  document.body.classList.remove('intro-active');
-  document.body.classList.add('is-landed');
-  window.setTimeout(schedulePreviewInit, skip ? 80 : 260);
-  syncBoardLoop();
-}
-
-const introDuration = reduceMotion.matches ? REDUCED_INTRO_MS : INTRO_MS;
-const introTimer = window.setTimeout(() => closeIntro(false), introDuration);
-
-introSkip?.addEventListener('click', () => {
-  window.clearTimeout(introTimer);
-  closeIntro(true);
-});
-
-function updateIntroTypography(now) {
-  const elapsed = now - introStartedAt;
-  const total = reduceMotion.matches ? REDUCED_INTRO_MS : INTRO_MS;
-  const p = clamp01(elapsed / total);
-
-  const phases = ['INITIALIZING', 'STRUCTURE', 'INTERFACE', 'CONNECTION', 'DEPLOY', 'LANDING'];
-  if (introPhase) {
-    introPhase.textContent = phases[Math.min(phases.length - 1, Math.floor(p * phases.length))];
-  }
-
-  introWords.forEach((word, index) => {
-    const baseX = Number(word.dataset.x || 0);
-    const baseY = Number(word.dataset.y || 0);
-    const baseR = Number(word.dataset.r || 0);
-    const introStart = .04 + index * .055;
-    const introEnd = introStart + .19;
-    const enter = smoothstep((p - introStart) / (introEnd - introStart));
-    const exit = smoothstep((p - .76 - index * .015) / .16);
-    const live = 1 - exit;
-
-    const targetX = baseX * innerWidth * .62;
-    const targetY = baseY * innerHeight * .66;
-
-    if (reduceMotion.matches) {
-      const fadeIn = smoothstep(p / .13);
-      const fadeOut = smoothstep((p - .72) / .2);
-      word.style.opacity = (fadeIn * (1 - fadeOut)).toFixed(3);
-      word.style.filter = 'none';
-      word.style.transform =
-        `translate3d(calc(-50% + ${targetX.toFixed(2)}px), calc(-50% + ${targetY.toFixed(2)}px), 0) scale(.86) rotate(${baseR.toFixed(2)}deg)`;
-      return;
+const posters = [...document.querySelectorAll('.project-poster')];
+const loadPoster = img => {
+  if (!img.dataset.src || img.dataset.loaded) return;
+  img.dataset.loaded = '1';
+  img.addEventListener('load', () => img.classList.add('is-loaded'), { once: true });
+  img.addEventListener('error', () => img.remove(), { once: true });
+  img.src = img.dataset.src;
+};
+if ('IntersectionObserver' in window) {
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) { loadPoster(entry.target); observer.unobserve(entry.target); }
     }
+  }, { rootMargin: '250px 0px' });
+  posters.forEach(img => observer.observe(img));
+} else posters.forEach(loadPoster);
 
-    const startX = targetX * 1.85;
-    const startY = targetY * 1.65;
-    const wobbleX = Math.sin(p * 8 + index * 1.7) * (7 + index * 1.5);
-    const wobbleY = Math.cos(p * 7.4 + index * .9) * (5 + index);
-    const exitPushX = targetX * .22 * exit;
-    const exitPushY = targetY * .16 * exit;
-
-    const x = mix(startX, targetX, enter) + wobbleX + exitPushX;
-    const y = mix(startY, targetY, enter) + wobbleY + exitPushY;
-    const z = mix(-260, 18 + index * 6, enter) + exit * 310;
-    const scale = mix(.7, .9, enter) + exit * .14;
-    const rotate = baseR * (1 - enter * .22) + Math.sin(p * 5 + index) * .55;
-    const blur = (1 - enter) * 16 + exit * 14;
-    const opacity = enter * live;
-
-    word.style.opacity = opacity.toFixed(3);
-    word.style.filter = `blur(${blur.toFixed(2)}px)`;
-    word.style.transform =
-      `translate3d(calc(-50% + ${x.toFixed(2)}px), calc(-50% + ${y.toFixed(2)}px), ${z.toFixed(2)}px) scale(${scale.toFixed(3)}) rotate(${rotate.toFixed(2)}deg)`;
-  });
-}
-
-function startIntroVisual() {
-  if (!(introCanvas instanceof HTMLCanvasElement)) return;
-  const ctx = introCanvas.getContext('2d', { alpha: true });
-  if (!ctx) return;
-
-  let raf = 0;
-
-  function resize() {
-    const rect = introCanvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const width = Math.max(1, Math.round(rect.width * dpr));
-    const height = Math.max(1, Math.round(rect.height * dpr));
-
-    if (introCanvas.width !== width || introCanvas.height !== height) {
-      introCanvas.width = width;
-      introCanvas.height = height;
-    }
-
-    return { width, height, dpr };
-  }
-
-  function draw(now) {
-    if (introClosed && now - introClosedAt > 780) {
-      cancelAnimationFrame(raf);
-      return;
-    }
-
-    updateIntroTypography(now);
-
-    const elapsed = now - introStartedAt;
-    const { width, height, dpr } = resize();
-    ctx.clearRect(0, 0, width, height);
-    ctx.save();
-    ctx.scale(dpr, dpr);
-
-    const w = width / dpr;
-    const h = height / dpr;
-    const cx = w * .5;
-    const cy = h * .5;
-    const base = Math.min(w, h) * .21;
-    const time = elapsed * .001;
-    const speed = reduceMotion.matches ? .12 : 1;
-
-    ctx.translate(cx, cy);
-    ctx.globalCompositeOperation = 'lighter';
-
-    const ribbons = reduceMotion.matches ? 26 : 78;
-    for (let i = 0; i < ribbons; i += 1) {
-      const q = i / ribbons;
-      const phase = q * Math.PI * 2;
-      const spin = time * (.29 + q * .15) * speed;
-      const rx = base * (1.04 + Math.sin(time * .73 * speed + phase * 2.7) * .15);
-      const ry = base * (.72 + Math.cos(time * .92 * speed + phase * 2.1) * .14);
-      const wobble = base * (.055 + .035 * Math.sin(time * 1.1 * speed + phase * 4));
-      const start = phase + spin;
-      const sweep = Math.PI * (1.2 + .52 * Math.sin(phase * 3 + time * .58 * speed));
-
-      ctx.beginPath();
-      for (let step = 0; step <= 42; step += 1) {
-        const u = step / 42;
-        const angle = start + sweep * u;
-        const pulse = Math.sin(angle * 3 + time * 1.9 * speed + phase) * wobble;
-        const twist = Math.cos(angle * 2 - time * 1.35 * speed + phase * 2) * wobble * .45;
-        const x = Math.cos(angle) * (rx + pulse) + twist;
-        const y = Math.sin(angle) * (ry + pulse * .58);
-        if (step === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-
-      const hue = (188 + q * 245 + time * 34 * speed) % 360;
-      ctx.strokeStyle = `hsla(${hue}, 100%, 58%, ${.04 + (i % 6) * .007})`;
-      ctx.lineWidth = .75 + (i % 5) * .31;
-      ctx.shadowBlur = 8 + (i % 5) * 2.2;
-      ctx.shadowColor = `hsla(${hue}, 100%, 58%, .48)`;
-      ctx.stroke();
-    }
-
-    const coreGradient = ctx.createRadialGradient(0, 0, base * .12, 0, 0, base * .82);
-    coreGradient.addColorStop(0, 'rgba(2,4,7,.98)');
-    coreGradient.addColorStop(.55, 'rgba(3,5,9,.8)');
-    coreGradient.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = coreGradient;
-    ctx.beginPath();
-    ctx.arc(0, 0, base * .82, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-    raf = requestAnimationFrame(draw);
-  }
-
-  raf = requestAnimationFrame(draw);
-}
-
-startIntroVisual();
-
-/* KINETIC BOARD */
-const baseRotations = [0, -.3, .25, -.25, .18, -.2, .2, -.16];
-const tiles = [...document.querySelectorAll('.project-tile')];
-const isMobileMotion = () => coarsePointer.matches || innerWidth <= 620;
-const tileState = tiles.map((tile, index) => ({
-  tile,
-  baseRotation: baseRotations[index] ?? 0,
-  phase: index * 1.71,
-  speed: .00012 + (index % 4) * .000017,
-  ampX: isMobileMotion() ? 4 + (index % 3) * 2 : 13 + (index % 3) * 6,
-  ampY: isMobileMotion() ? 3 + (index % 4) * 1.5 : 9 + ((index + 1) % 4) * 4,
-  x: 0,
-  y: 0,
-  vx: 0,
-  vy: 0,
-  repelX: 0,
-  repelY: 0,
-  repelTargetX: 0,
-  repelTargetY: 0,
-  dragging: false,
-  dragged: false,
-  startPointerX: 0,
-  startPointerY: 0,
-  startX: 0,
-  startY: 0,
-  lastPointerX: 0,
-  lastPointerY: 0,
-  lastPointerTime: 0,
-  pointerVX: 0,
-  pointerVY: 0,
+/* Magnet field: panels react to each other, not only the pointer. */
+const rotations = [0, -.3, .25, -.25, .18, -.2, .2, -.16];
+const isMobile = () => coarsePointer.matches || innerWidth <= 620;
+const states = [...document.querySelectorAll('.project-tile')].map((tile, index) => ({
+  tile, index, baseRotation: rotations[index] || 0, phase: index * 1.71,
+  speed: .00012 + (index % 4) * .000018,
+  x: 0, y: 0, vx: 0, vy: 0,
+  targetX: 0, targetY: 0, pushX: 0, pushY: 0,
+  dragging: false, moved: false, candidate: false,
+  startPointerX: 0, startPointerY: 0, startX: 0, startY: 0,
+  lastX: 0, lastY: 0, lastTime: 0, throwVX: 0, throwVY: 0
 }));
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-
-function rubberBand(value, limit = 74) {
-  const sign = Math.sign(value) || 1;
-  const absolute = Math.abs(value);
-  if (absolute <= limit) return value;
-  return sign * (limit + (absolute - limit) * .32);
-}
+const svgNS = 'http://www.w3.org/2000/svg';
+const links = document.createElementNS(svgNS, 'svg');
+links.setAttribute('class', 'board-links');
+links.setAttribute('aria-hidden', 'true');
+const paths = Array.from({ length: 3 }, () => {
+  const p = document.createElementNS(svgNS, 'path');
+  links.appendChild(p);
+  return p;
+});
+board?.prepend(links);
 
 let boardVisible = false;
 let boardRaf = 0;
 let lastFrame = performance.now();
+let hovered = null;
 
-function setPointerRepulsion(event) {
-  if (!boardVisible || reduceMotion.matches || event.pointerType === 'touch') return;
-
-  for (const state of tileState) {
-    const rect = state.tile.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = cx - event.clientX;
-    const dy = cy - event.clientY;
-    const distance = Math.hypot(dx, dy);
-    const range = Math.max(170, Math.min(310, rect.width * 1.18));
-
-    if (distance < range && distance > 0) {
-      const force = (1 - distance / range) * 18;
-      state.repelTargetX = (dx / distance) * force;
-      state.repelTargetY = (dy / distance) * force;
-    } else {
-      state.repelTargetX = 0;
-      state.repelTargetY = 0;
-    }
-  }
+function clearField() {
+  hovered = null;
+  links.classList.remove('is-active');
+  states.forEach(s => { s.tile.classList.remove('is-magnetic'); s.targetX = 0; s.targetY = 0; });
 }
 
-board?.addEventListener('pointermove', setPointerRepulsion, { passive: true });
-board?.addEventListener('pointerleave', () => {
-  for (const state of tileState) {
-    state.repelTargetX = 0;
-    state.repelTargetY = 0;
-  }
-});
-
-for (const state of tileState) {
-  const { tile } = state;
-  const link = tile.querySelector('.project-link');
-
-  tile.addEventListener('pointerdown', event => {
-    if (reduceMotion.matches || event.pointerType === 'touch') return;
-
-    state.dragging = true;
-    state.dragged = false;
-    state.startPointerX = event.clientX;
-    state.startPointerY = event.clientY;
-    state.startX = state.x;
-    state.startY = state.y;
-    state.lastPointerX = event.clientX;
-    state.lastPointerY = event.clientY;
-    state.lastPointerTime = event.timeStamp;
-    state.pointerVX = 0;
-    state.pointerVY = 0;
-    tile.classList.add('is-dragging');
-    tile.setPointerCapture?.(event.pointerId);
-  });
-
-  tile.addEventListener('pointermove', event => {
-    if (!state.dragging) return;
-
-    const rawX = state.startX + event.clientX - state.startPointerX;
-    const rawY = state.startY + event.clientY - state.startPointerY;
-    state.x = rubberBand(rawX);
-    state.y = rubberBand(rawY);
-
-    const dt = Math.max(8, event.timeStamp - state.lastPointerTime) / 1000;
-    state.pointerVX = clamp((event.clientX - state.lastPointerX) / dt, -1400, 1400);
-    state.pointerVY = clamp((event.clientY - state.lastPointerY) / dt, -1400, 1400);
-    state.lastPointerX = event.clientX;
-    state.lastPointerY = event.clientY;
-    state.lastPointerTime = event.timeStamp;
-
-    if (Math.hypot(event.clientX - state.startPointerX, event.clientY - state.startPointerY) > 6) {
-      state.dragged = true;
-    }
-  });
-
-  const release = event => {
-    if (!state.dragging) return;
-    state.dragging = false;
-    state.vx = state.pointerVX;
-    state.vy = state.pointerVY;
-    tile.classList.remove('is-dragging');
-    tile.releasePointerCapture?.(event.pointerId);
+function renderField(active) {
+  if (!board || !active || reduceMotion.matches || isMobile()) return;
+  const box = board.getBoundingClientRect();
+  if (box.width < 1 || box.height < 1) return;
+  const center = el => {
+    const rect = el.getBoundingClientRect();
+    return { x: rect.left - box.left + rect.width / 2,
+             y: rect.top - box.top + rect.height / 2 };
   };
-
-  tile.addEventListener('pointerup', release);
-  tile.addEventListener('pointercancel', release);
-
-  link?.addEventListener('click', event => {
-    if (state.dragged) {
-      event.preventDefault();
-      state.dragged = false;
-    }
+  const anchor = center(active);
+  const neighbors = states.filter(s => s.tile !== active)
+    .map(s => {
+      const pt = center(s.tile);
+      return { state: s, pt, distance: Math.hypot(pt.x-anchor.x, pt.y-anchor.y) };
+    }).sort((a,b) => a.distance-b.distance).slice(0,3);
+  states.forEach(s => s.tile.classList.toggle('is-magnetic',
+    s.tile === active || neighbors.some(n => n.state === s)));
+  links.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+  paths.forEach((path, index) => {
+    const n = neighbors[index];
+    if (!n) return path.setAttribute('d','');
+    const midX = (anchor.x+n.pt.x)/2;
+    const midY = (anchor.y+n.pt.y)/2 - Math.min(26,n.distance*.055);
+    path.setAttribute('d',`M ${anchor.x.toFixed(1)} ${anchor.y.toFixed(1)} Q ${midX.toFixed(1)} ${midY.toFixed(1)} ${n.pt.x.toFixed(1)} ${n.pt.y.toFixed(1)}`);
+    path.style.opacity = String(.8-index*.17);
   });
+  links.classList.add('is-active');
 }
 
-function renderStaticTiles() {
-  for (const state of tileState) {
-    state.tile.style.transform = `rotate(${state.baseRotation}deg)`;
+function applyPointerField(event) {
+  if (reduceMotion.matches || isMobile() || !boardVisible) return;
+  const active = event.target.closest?.('.project-tile');
+  if (active) hovered = active;
+  if (hovered) renderField(hovered);
+  for (const s of states) {
+    const rect = s.tile.getBoundingClientRect();
+    const dx = rect.left + rect.width/2 - event.clientX;
+    const dy = rect.top + rect.height/2 - event.clientY;
+    const dist = Math.hypot(dx, dy);
+    const range = Math.max(180, Math.min(340,rect.width*1.4));
+    const force = dist > 1 && dist < range ? (1-dist/range)*20 : 0;
+    s.targetX = force*dx/(dist||1);
+    s.targetY = force*dy/(dist||1);
   }
+}
+board?.addEventListener('pointermove',applyPointerField,{ passive: true });
+board?.addEventListener('pointerleave',clearField);
+
+for (const s of states) {
+  const {tile} = s;
+  tile.addEventListener('pointerdown', event => {
+    if (reduceMotion.matches || event.pointerType === 'touch' || event.button !== 0) return;
+    s.candidate = true; s.moved = false;
+    s.startPointerX = s.lastX = event.clientX;
+    s.startPointerY = s.lastY = event.clientY;
+    s.startX = s.x; s.startY = s.y;
+    s.lastTime = event.timeStamp;
+  });
+  tile.addEventListener('pointermove', event => {
+    if (!s.candidate) return;
+    const dx = event.clientX-s.startPointerX;
+    const dy = event.clientY-s.startPointerY;
+    if (!s.dragging && Math.hypot(dx,dy) > 6) {
+      s.dragging = true; s.moved = true;
+      tile.classList.add('is-dragging');
+      tile.setPointerCapture?.(event.pointerId);
+    }
+    if (!s.dragging) return;
+    s.x = rubberBand(s.startX + dx);
+    s.y = rubberBand(s.startY + dy);
+    const dt = Math.max(8,event.timeStamp-s.lastTime)/1000;
+    s.throwVX = clamp((event.clientX-s.lastX)/dt,-1100,1100);
+    s.throwVY = clamp((event.clientY-s.lastY)/dt,-1100,1100);
+    s.lastTime = event.timeStamp; s.lastX = event.clientX; s.lastY = event.clientY;
+  });
+  const release = event => {
+    if (!s.candidate) return;
+    s.candidate = false;
+    if(s.dragging) {
+      s.vx=s.throwVX; s.vy=s.throwVY;
+      s.dragging = false; tile.classList.remove('is-dragging');
+      if (tile.hasPointerCapture?.(event.pointerId)) tile.releasePointerCapture(event.pointerId);
+    }
+  };
+  tile.addEventListener('pointerup',release);
+  tile.addEventListener('pointercancel',release);
+  tile.addEventListener('click',event=>{
+    if(s.moved) {
+      event.preventDefault(); event.stopPropagation(); s.moved=false;
+    }
+  },true);
+}
+
+function renderStill() {
+  states.forEach(s => { s.tile.style.transform=`rotate(${s.baseRotation}deg)`; });
+  clearField();
 }
 
 function animateBoard(now) {
-  boardRaf = 0;
-  if (!boardVisible || reduceMotion.matches || document.hidden || !document.body.classList.contains('is-landed')) return;
-
-  const dt = Math.min(.032, Math.max(.001, (now - lastFrame) / 1000));
-  lastFrame = now;
-  const springK = 135;
-  const springDamping = 21;
-  const follow = 1 - Math.exp(-11 * dt);
-
-  for (const state of tileState) {
-    if (!state.dragging) {
-      const ax = -springK * state.x - springDamping * state.vx;
-      const ay = -springK * state.y - springDamping * state.vy;
-      state.vx += ax * dt;
-      state.vy += ay * dt;
-      state.x += state.vx * dt;
-      state.y += state.vy * dt;
-
-      if (Math.abs(state.x) < .02 && Math.abs(state.vx) < .05) {
-        state.x = 0;
-        state.vx = 0;
-      }
-      if (Math.abs(state.y) < .02 && Math.abs(state.vy) < .05) {
-        state.y = 0;
-        state.vy = 0;
-      }
+  boardRaf=0;
+  if (!boardVisible || document.hidden || reduceMotion.matches) return;
+  const dt = Math.min(.032,Math.max(.001,(now-lastFrame)/1000));
+  lastFrame=now;
+  const follow=1-Math.exp(-11*dt);
+  for (const s of states) {
+    if(!s.dragging){
+      s.vx += (-135*s.x-21*s.vx)*dt;
+      s.vy += (-135*s.y-21*s.vy)*dt;
+      s.x += s.vx*dt; s.y += s.vy*dt;
+      if(Math.abs(s.x)<.02 && Math.abs(s.vx)<.1){s.x=0;s.vx=0;}
+      if(Math.abs(s.y)<.02 && Math.abs(s.vy)<.1){s.y=0;s.vy=0;}
     }
-
-    state.repelX += (state.repelTargetX - state.repelX) * follow;
-    state.repelY += (state.repelTargetY - state.repelY) * follow;
-
-    const t = now * state.speed;
-    const autoX = Math.sin(t + state.phase) * state.ampX;
-    const autoY = Math.cos(t * 1.17 + state.phase * .73) * state.ampY;
-    const autoR = Math.sin(t * .81 + state.phase) * .34;
-    const scale = state.tile.matches(':hover') && !state.dragging ? 1.012 : 1;
-
-    const x = autoX + state.repelX + state.x;
-    const y = autoY + state.repelY + state.y;
-    const rotation = state.baseRotation + autoR;
-
-    state.tile.style.transform =
-      `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) rotate(${rotation.toFixed(3)}deg) scale(${scale})`;
+    s.pushX+=(s.targetX-s.pushX)*follow;
+    s.pushY+=(s.targetY-s.pushY)*follow;
+    const t=now*s.speed;
+    const amplitude=isMobile()?.33:1;
+    const autoX=Math.sin(t+s.phase)*(13+s.index%3*5)*amplitude;
+    const autoY=Math.cos(t*1.17+s.phase*.73)*(9+s.index%4*4)*amplitude;
+    const rotation=s.baseRotation+Math.sin(t*.81+s.phase)*.34*amplitude;
+    const scale=s.tile.matches(':hover') && !s.dragging ? 1.012:1;
+    s.tile.style.transform=`translate3d(${(s.x+s.pushX+autoX).toFixed(2)}px,${(s.y+s.pushY+autoY).toFixed(2)}px,0) rotate(${rotation.toFixed(3)}deg) scale(${scale})`;
   }
-
-  boardRaf = requestAnimationFrame(animateBoard);
+  boardRaf=requestAnimationFrame(animateBoard);
 }
-
-function syncBoardLoop() {
-  const shouldRun =
-    boardVisible &&
-    !reduceMotion.matches &&
-    !document.hidden &&
-    document.body.classList.contains('is-landed');
-
-  if (board) board.dataset.active = shouldRun ? 'true' : 'false';
-
-  if (shouldRun && !boardRaf) {
-    lastFrame = performance.now();
-    boardRaf = requestAnimationFrame(animateBoard);
-  } else if (!shouldRun && boardRaf) {
-    cancelAnimationFrame(boardRaf);
-    boardRaf = 0;
-  }
-
-  if (!shouldRun && reduceMotion.matches) renderStaticTiles();
+function syncLoop() {
+  const shouldRun=boardVisible && !document.hidden && !reduceMotion.matches;
+  if(board)board.dataset.active=shouldRun?'true':'false';
+  if(shouldRun&&!boardRaf){lastFrame=performance.now();boardRaf=requestAnimationFrame(animateBoard);}
+  if(!shouldRun&&boardRaf){cancelAnimationFrame(boardRaf);boardRaf=0;}
+  if(reduceMotion.matches)renderStill();
 }
-
-if (board && 'IntersectionObserver' in window) {
-  const boardObserver = new IntersectionObserver(([entry]) => {
-    boardVisible = Boolean(entry?.isIntersecting);
-    syncBoardLoop();
-  }, { rootMargin: '120px 0px' });
-  boardObserver.observe(board);
-} else if (board) {
-  boardVisible = true;
-}
-
-document.addEventListener('visibilitychange', syncBoardLoop);
-window.addEventListener('resize', () => {
-  const mobile = isMobileMotion();
-  tileState.forEach((state, index) => {
-    state.ampX = mobile ? 4 + (index % 3) * 2 : 13 + (index % 3) * 6;
-    state.ampY = mobile ? 3 + (index % 4) * 1.5 : 9 + ((index + 1) % 4) * 4;
-  });
-}, { passive: true });
-
-document.documentElement.dataset.motion = reduceMotion.matches ? 'reduced' : 'full';
-reduceMotion.addEventListener?.('change', event => {
-  document.documentElement.dataset.motion = event.matches ? 'reduced' : 'full';
-  if (event.matches && !introClosed) {
-    window.clearTimeout(introTimer);
-    window.setTimeout(() => closeIntro(false), REDUCED_INTRO_MS);
-  }
-  syncBoardLoop();
-});
+if(board && 'IntersectionObserver' in window) {
+  const observer=new IntersectionObserver(([entry])=>{
+    boardVisible=Boolean(entry?.isIntersecting);
+    syncLoop(); if(!boardVisible)clearField();
+  },{rootMargin:'100px 0px'});
+  observer.observe(board);
+}else if(board){boardVisible=true;syncLoop();}
+document.addEventListener('visibilitychange',syncLoop);
+reduceMotion.addEventListener?.('change', syncLoop);
+document.documentElement.dataset.motion=reduceMotion.matches?'reduced':'full';

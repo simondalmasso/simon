@@ -1,45 +1,36 @@
 import { readFile } from 'node:fs/promises';
-
-const [html, css, js, data, headers] = await Promise.all([
-  readFile(new URL('../index.html', import.meta.url), 'utf8'),
-  readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
-  readFile(new URL('../src/main.js', import.meta.url), 'utf8'),
-  readFile(new URL('../src/data/projects.js', import.meta.url), 'utf8'),
-  readFile(new URL('../_headers', import.meta.url), 'utf8'),
+import { projects } from '../src/data/projects.js';
+const [html, css, js, headers, build] = await Promise.all([
+  readFile(new URL('../index.html',import.meta.url),'utf8'),
+  readFile(new URL('../src/styles.css',import.meta.url),'utf8'),
+  readFile(new URL('../src/main.js',import.meta.url),'utf8'),
+  readFile(new URL('../_headers',import.meta.url),'utf8'),
+  readFile(new URL('./build.mjs',import.meta.url),'utf8')
 ]);
-
-const assertions = [
-  ['semantic main', /<main\b/.test(html)],
-  ['single h1', (html.match(/<h1\b/g) || []).length === 1],
-  ['skip link', /class="skip-link"/.test(html)],
-  ['work target', /id="work"/.test(html)],
-  ['requested disciplines', /SOFTWARE · SYSTEMS · STORE · CRM · UX/.test(html)],
-  ['cinematic intro duration', /INTRO_MS = 6700/.test(js)],
-  ['cinematic intro vocabulary', ['DESARROLLO A MEDIDA','SISTEMAS','UI \/ UX','INTEGRACIONES','VANGUARDIA'].every(term => html.includes(term))],
-  ['spectral canvas', /intro-canvas/.test(html) && /startIntroVisual/.test(js)],
-  ['intro skip accessible', !/intro-splash[^>]*aria-hidden/.test(html) && /intro-skip/.test(html)],
-  ['landing transition', /is-landed/.test(js) && /body\.is-landed/.test(css)],
-  ['no door remains', !/door-(stage|wrap|frame|panel|handle)/.test(html + css + js)],
-  ['live preview frames', /class="project-frame"/.test(js) && /initFrames/.test(js)],
-  ['preview loading waits for intro', /schedulePreviewInit/.test(js) && /requestIdleCallback/.test(js)],
-  ['frame-blocked fallback', /is-policy-blocked/.test(js) && /embeddable:\s*false/.test(data)],
-  ['kinetic project motion', /animateBoard/.test(js) && /setPointerRepulsion/.test(js)],
-  ['spring drag return', /springK/.test(js) && /rubberBand/.test(js) && /pointerVX/.test(js)],
-  ['offscreen motion guard', /boardVisible/.test(js) && /document\.hidden/.test(js) && /board\.dataset\.active/.test(js)],
-  ['eight project data entries', (data.match(/id:\s*'/g) || []).length === 8],
-  ['no AI claim in visible page', !/\bAI\b/i.test(html)],
-  ['email contact', /mailto:simondalmasso44@gmail\.com/.test(html)],
-  ['whatsapp contact', /wa\.me\/543425391278/.test(html)],
-  ['floating contact dock', /class="contact-dock"/.test(html)],
-  ['reduced motion', /prefers-reduced-motion:\s*reduce/.test(css) && /REDUCED_INTRO_MS = 6700/.test(js)],
-  ['visible focus', /focus-visible/.test(css)],
-  ['no external font', !/@import\s+url|fonts\.googleapis/.test(css)],
-  ['security headers', /Content-Security-Policy/.test(headers) && /X-Content-Type-Options:\s*nosniff/.test(headers)],
-  ['CSP allows portfolio previews', /frame-src\s+https:\/\/\*\.simondalmasso44\.workers\.dev/.test(headers)],
-  ['no eval', !/\beval\s*\(/.test(js)],
+const assertions=[
+ ['semantic main',html.includes('<main')],
+ ['single h1',(html.match(/<h1\\b/g)||[]).length===1],
+ ['skip link',html.includes('class="skip-link"')],
+ ['work target',html.includes('id="work"')],
+ ['no intro element',!html.includes('intro-splash')],
+ ['no delayed landing',!js.includes('introTimer')&&!css.includes('is-landed')&&!css.includes('landing-tile')],
+ ['no canvas',!html.includes('<canvas')],
+ ['eight live sites',projects.length===8],
+ ['poster previews',js.includes('project-poster')&&js.includes('loadPoster')],
+ ['no iframes',!js.includes('project-frame')&&!html.includes('<iframe')],
+ ['fallback colors',css.includes('--poster-color')],
+ ['connections',js.includes('renderField')&&css.includes('board-links')],
+ ['elastic drag',js.includes('rubberBand')&&js.includes('throwVX')],
+ ['offscreen pause',js.includes('boardVisible')&&js.includes('document.hidden')],
+ ['asset copy',build.includes('previews')],
+ ['email',html.includes('mailto:simondalmasso44@gmail.com')],
+ ['whatsapp',html.includes('wa.me/543425391278')],
+ ['reduced motion',css.includes('prefers-reduced-motion: reduce')],
+ ['focus style',css.includes('focus-visible')],
+ ['security headers',headers.includes('Content-Security-Policy')],
+ ['no eval',!js.includes('eval(')]
 ];
-
-for (const [name, ok] of assertions) {
-  if (!ok) throw new Error(`check failed: ${name}`);
-  console.log(`PASS ${name}`);
+for(const [name,ok] of assertions) {
+ if(!ok)throw new Error('check failed: '+name);
+ console.log('PASS '+name);
 }

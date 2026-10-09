@@ -1,0 +1,56 @@
+name: Refresh Portfolio Previews
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/refresh-previews.yml
+      - scripts/capture-previews.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  capture-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WRANGLER_SEND_METRICS: "false"
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install temporary browser
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install chromium --with-deps
+      - name: Capture eight actual project pages
+        run: node scripts/capture-previews.mjs
+      - name: Store screenshots in repository
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add previews/
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: refresh live website screenshots"
+            git push origin HEAD:main
+          fi
+      - name: Verify and build
+        run: npm run verify
+      - name: Deploy snapshots to Cloudflare
+        run: npx --yes wrangler@4.119.0 deploy
+      - name: Smoke production and thumbnail
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error "https://simon.simondalmasso44.workers.dev/" | grep -Fq 'SIMÓN'
+          curl --fail --silent --show-error -I "https://simon.simondalmasso44.workers.dev/previews/jobas.jpg" | grep -iq '^HTTP/.*200'
+          echo "SNAPSHOTS_LIVE=YES"
