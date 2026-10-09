@@ -12,3 +12,7 @@ Work-first editorial mosaic. First paint shows identity plus interactive portfol
 ## Kinetic visual hierarchy
 
 One primary action at a time: arrival of the board, then a relay wave between neighboring projects, and lastly user-triggered magnetic spotlight/links. The relay never animates the entire grid at once; all motion uses GPU transforms/opacity and a small bounded amplitude. Strong entrance easing and short hover feedback follow the `emilkowalski/skills` design-motion guidance and the stagger/secondary-motion principles from `iart-ai/motion-design-skills`.
+
+## Motion clarity
+
+One conspicuous foreground project every ~3 seconds, with two physically responsive neighbors, avoids the previous nearly imperceptible 13px wave. The visitor can pause the motion in the WORK INDEX tile. Hover/drag overrides the ambient spotlight; strong photographic framing is provided by border, zoom, and a short-lived label, not by obscuring the thumbnails.

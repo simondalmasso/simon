@@ -2,6 +2,9 @@ import { projects } from './data/projects.js';
 
 const grid = document.querySelector('#project-grid');
 const board = document.querySelector('#project-board');
+const motionToggle = document.querySelector('.motion-toggle');
+const motionToggleLabel = document.querySelector('.motion-toggle-label');
+let userMotionEnabled = true;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const coarsePointer = matchMedia('(pointer: coarse)');
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -22,6 +25,7 @@ if (grid) {
       </div>
       <div class="project-scrim" aria-hidden="true"></div>
       <div class="project-meta"><span>${String(index + 1).padStart(2, '0')}</span><span>LIVE WEB</span></div>
+      <div class="feature-marker" aria-hidden="true"><span class="feature-spark"></span>IN FOCUS</div>
       <h2 class="project-name">${project.name}</h2>
       <span class="project-arrow" aria-hidden="true">↗</span>
       <a class="project-link" href="${project.href}" target="_blank" rel="noopener"
@@ -52,7 +56,9 @@ const rotations = [0, -.3, .25, -.25, .18, -.2, .2, -.16];
 const isMobile = () => coarsePointer.matches || innerWidth <= 620;
 const states = [...document.querySelectorAll('.project-tile')].map((tile, index) => ({
   tile, index, baseRotation: rotations[index] || 0, phase: index * 1.71,
-  speed: .00049 + (index % 4) * .00005,
+  speed: .0004 + (index % 4) * .00005,
+  feature: 0, featureTarget: 0,
+  neighbor: 0, neighborTarget: 0, neighborDx: 0, neighborDy: 0,
   x: 0, y: 0, vx: 0, vy: 0,
   targetX: 0, targetY: 0, pushX: 0, pushY: 0,
   dragging: false, moved: false, candidate: false,
@@ -76,15 +82,58 @@ let boardRaf = 0;
 let lastFrame = performance.now();
 let hovered = null;
 let lastConnectionRender = 0;
-const ambientStart = performance.now();
+const showcaseStarted = performance.now();
+const showcasePeriod = 2950;
+let showcaseIndex = -1;
 
-// A short, sequential impulse travels between neighboring tiles.
-// It deliberately animates only one or two cards at once.
-function relayEnvelope(seconds, index) {
-  const cycle = seconds % 7.4;
-  const progress = (cycle - 1.15 - index * .37) / .95;
-  if (progress <= 0 || progress >= 1) return 0;
-  return Math.sin(Math.PI * progress);
+function setShowcase(index) {
+  if(index === showcaseIndex) return;
+  showcaseIndex = index;
+  const active = states[index]?.tile;
+  if(!active) return;
+
+  const center = element => {
+    const box = element.getBoundingClientRect();
+    return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+  };
+  const origin = center(active);
+  const nearby = states.filter(s => s.index !== index).map(s => {
+    const location = center(s.tile);
+    return { s, dx: location.x - origin.x, dy: location.y - origin.y,
+      distance: Math.hypot(location.x - origin.x, location.y - origin.y) };
+  }).sort((a,b)=>a.distance-b.distance).slice(0,2);
+  states.forEach(s => {
+    s.featureTarget = s.index === index ? 1 : 0;
+    const near = nearby.find(n => n.s === s);
+    s.neighborTarget = near ? 1 : 0;
+    if(near) {
+      const length = near.distance || 1;
+      s.neighborDx = (near.dx / length) * 17;
+      s.neighborDy = (near.dy / length) * 12;
+    }
+    s.tile.classList.toggle('is-featured',s.index===index);
+    s.tile.classList.toggle('is-featured-neighbor',Boolean(near));
+  });
+}
+
+function disableShowcase() {
+  showcaseIndex=-1;
+  states.forEach(s=>{
+    s.featureTarget=0;
+    s.neighborTarget=0;
+    s.tile.classList.remove('is-featured','is-featured-neighbor');
+  });
+}
+
+function updateMotionControl() {
+  const running = userMotionEnabled && !reduceMotion.matches;
+  if(motionToggle) {
+    motionToggle.disabled=reduceMotion.matches;
+    motionToggle.setAttribute('aria-pressed',String(running));
+    motionToggle.setAttribute('aria-label',running?'Pausar movimiento de los proyectos':'Activar movimiento de los proyectos');
+    motionToggle.title=reduceMotion.matches?'El dispositivo tiene activado Reducir movimiento':'Alternar movimiento de proyectos';
+  }
+  if(motionToggleLabel) motionToggleLabel.textContent=running?'MOTION ON':'MOTION OFF';
 }
 
 function clearField() {
@@ -206,10 +255,13 @@ for (const s of states) {
 }
 
 function renderStill() {
-  states.forEach(s => {
+  states.forEach(s=>{
     s.tile.style.transform=`rotate(${s.baseRotation}deg)`;
-    s.tile.classList.remove('is-in-wave');
+    s.feature=0; s.featureTarget=0;
+    s.neighbor=0; s.neighborTarget=0;
+    s.tile.classList.remove('is-featured','is-featured-neighbor');
   });
+  showcaseIndex=-1;
   clearField();
 }
 
@@ -219,6 +271,11 @@ function animateBoard(now) {
   const dt = Math.min(.032,Math.max(.001,(now-lastFrame)/1000));
   lastFrame=now;
   const follow=1-Math.exp(-11*dt);
+  if(hovered || states.some(s=>s.dragging)) {
+    if(showcaseIndex!==-1)disableShowcase();
+  } else {
+    setShowcase(Math.floor((now-showcaseStarted)/showcasePeriod)%states.length);
+  }
   for (const s of states) {
     if(!s.dragging){
       s.vx += (-135*s.x-21*s.vx)*dt;
@@ -229,15 +286,19 @@ function animateBoard(now) {
     }
     s.pushX+=(s.targetX-s.pushX)*follow;
     s.pushY+=(s.targetY-s.pushY)*follow;
+    s.feature+=(s.featureTarget-s.feature)*(1-Math.exp(-5.8*dt));
+    s.neighbor+=(s.neighborTarget-s.neighbor)*follow;
     const t=now*s.speed;
-    const amplitude=isMobile()?.32:1;
-    const relay=relayEnvelope((now-ambientStart)/1000,s.index) * amplitude;
-    const autoX=Math.sin(t+s.phase)*(8+s.index%3*3)*amplitude + relay*(s.index%2?2.5:-2.5);
-    const autoY=Math.cos(t*1.17+s.phase*.73)*(7+s.index%4*2)*amplitude - relay*13;
-    const rotation=s.baseRotation+Math.sin(t*.81+s.phase)*.36*amplitude + relay*(s.index%2?.75:-.75);
-    const scale=(s.tile.matches(':hover') || s.tile.matches(':focus-within'))&&!s.dragging ? 1.022:1;
-    s.tile.classList.toggle('is-in-wave',relay>.32 && !s.dragging);
-    s.tile.style.transform=`translate3d(${(s.x+s.pushX+autoX).toFixed(2)}px,${(s.y+s.pushY+autoY).toFixed(2)}px,0) rotate(${rotation.toFixed(3)}deg) scale(${scale})`;
+    const amplitude=isMobile()?.3:1;
+    const active=s.tile===hovered || s.tile.matches(':focus-within');
+    const autoX=Math.sin(t+s.phase)*(6+s.index%3*2)*amplitude;
+    const autoY=Math.cos(t*1.17+s.phase*.73)*(5+s.index%4*2)*amplitude;
+    const lifted=(isMobile()?8:27)*s.feature + (active&&!s.dragging?18:0);
+    const x=s.x+s.pushX+autoX+s.neighbor*s.neighborDx*amplitude;
+    const y=s.y+s.pushY+autoY+s.neighbor*s.neighborDy*amplitude-lifted;
+    const rotation=s.baseRotation+Math.sin(t*.81+s.phase)*.2*amplitude+s.feature*.85*amplitude;
+    const scale=1+s.feature*(isMobile()?.016:.052)+(active&&!s.dragging?.04:0);
+    s.tile.style.transform=`translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0) rotate(${rotation.toFixed(3)}deg) scale(${scale.toFixed(4)})`;
   }
   // Lines follow moving neighbors even when the pointer is stationary.
   if(hovered && now-lastConnectionRender>75) {
@@ -247,12 +308,11 @@ function animateBoard(now) {
   boardRaf=requestAnimationFrame(animateBoard);
 }
 function syncLoop() {
-  const shouldRun=boardVisible && !document.hidden && !reduceMotion.matches;
+  const shouldRun=boardVisible && !document.hidden && !reduceMotion.matches && userMotionEnabled;
   if(board)board.dataset.active=shouldRun?'true':'false';
   if(shouldRun&&!boardRaf){lastFrame=performance.now();boardRaf=requestAnimationFrame(animateBoard);}
   if(!shouldRun&&boardRaf){cancelAnimationFrame(boardRaf);boardRaf=0;}
-  if(!shouldRun)states.forEach(s=>s.tile.classList.remove('is-in-wave'));
-  if(reduceMotion.matches)renderStill();
+  if(!shouldRun)renderStill();
 }
 if(board && 'IntersectionObserver' in window) {
   const observer=new IntersectionObserver(([entry])=>{
@@ -262,5 +322,14 @@ if(board && 'IntersectionObserver' in window) {
   observer.observe(board);
 }else if(board){boardVisible=true;syncLoop();}
 document.addEventListener('visibilitychange',syncLoop);
-reduceMotion.addEventListener?.('change', syncLoop);
+reduceMotion.addEventListener?.('change',()=>{
+  updateMotionControl();
+  syncLoop();
+});
+motionToggle?.addEventListener('click',()=>{
+  userMotionEnabled=!userMotionEnabled;
+  updateMotionControl();
+  syncLoop();
+});
+updateMotionControl();
 document.documentElement.dataset.motion=reduceMotion.matches?'reduced':'full';

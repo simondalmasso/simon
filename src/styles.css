@@ -207,6 +207,47 @@ h1 {
 }
 .board-links.is-active path { animation: connection-flow 900ms linear infinite; }
 @keyframes connection-flow { to { stroke-dashoffset: -22; } }
+.project-tile.is-featured {
+  z-index: 8;
+  border-color: var(--acid);
+  box-shadow: 0 24px 54px rgba(0,0,0,.34),0 0 0 1px rgba(234,255,26,.45),0 0 32px rgba(234,255,26,.12);
+}
+.project-tile.is-featured-neighbor {
+  border-color: rgba(234,255,26,.37);
+}
+.project-tile.is-featured .project-poster {
+  transform: scale(1.12);
+  filter: saturate(1.15) brightness(1.08);
+}
+.project-tile.is-featured .project-arrow {
+  transform: rotate(45deg) scale(1.13);
+}
+.feature-marker {
+  position: absolute; z-index: 4; right: 17px; bottom: 69px;
+  display: flex; align-items: center; gap: 7px;
+  font: 800 9px/1 var(--mono); letter-spacing: .1em;
+  color: var(--acid); text-shadow: 0 1px 8px #000;
+  opacity: 0; transform: translateY(9px);
+  transition: opacity 220ms ease, transform 220ms var(--ease-out);
+  pointer-events: none;
+}
+.is-featured .feature-marker { opacity: 1; transform: translateY(0); }
+.feature-spark {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--acid); box-shadow: 0 0 12px var(--acid);
+}
+.motion-toggle {
+  border: 1px solid rgba(0,0,0,.32);
+  background: #11120d; color: #f5f5ef;
+  border-radius: 999px; padding: 10px 12px;
+  font: 700 9px/1 var(--mono); letter-spacing: .04em;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  min-height: 34px; white-space: nowrap;
+}
+.motion-toggle:focus-visible { outline: 2px solid #11120d; outline-offset: 2px; }
+.motion-toggle:disabled { opacity: .55; cursor: not-allowed; }
+.motion-led { width: 7px; height: 7px; border-radius: 50%; background: var(--acid); box-shadow: 0 0 9px var(--acid); }
+.motion-toggle[aria-pressed="false"] .motion-led { background: #777; box-shadow: none; }
 .identity-tile,.statement-tile,.project-tile { z-index: 2; }
 .project-tile {
   --r: 0deg;
@@ -274,7 +315,7 @@ h1 {
 .project-poster {
   position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
   object-fit: cover; object-position: top center; opacity: 0;
-  transition: opacity 300ms ease;
+  transition: opacity 300ms ease,transform 700ms var(--ease-in-out),filter 450ms ease;
 }
 .project-poster.is-loaded { opacity: 1; }
 /* LiVa's authentic capture opens on a nearly black video player.
@@ -351,7 +392,7 @@ h1 {
   font-size: 16px;
   transition: transform 180ms var(--ease-out), background-color 180ms ease;
 }
-.project-tile.is-in-wave .project-arrow { transform: rotate(30deg) scale(1.08); }
+.project-tile.is-featured .project-arrow { transform: rotate(45deg) scale(1.13); }
 .project-link { position: absolute; z-index: 5; inset: 0; }
 .project-tile.is-dragging {
   animation-play-state: paused;
@@ -562,7 +603,9 @@ footer {
   h1 { font-size: clamp(48px, 15vw, 72px); }
   .identity-note { margin-top: 14px; font-size: 12px; }
   .statement-tile { grid-column: span 1; grid-row: span 2; padding: 14px; }
-  .statement-meta { flex-direction: column; gap: 4px; font-size: 7px; }
+  .statement-meta { flex-direction: column; gap: 6px; font-size: 7px; }
+  .motion-toggle { font-size: 8px; padding: 7px 9px; min-height: 28px; align-self: flex-start; }
+  .feature-marker { font-size: 8px; right: 10px; bottom: 54px; }
   .statement-tile strong { font-size: 27px; }
   .statement-tile i { right: 12px; bottom: 11px; }
   .project-tile:nth-child(n) { grid-column: span 1; grid-row: span 2; }
@@ -597,6 +640,9 @@ footer {
     scale: 1 !important;
   }
   .board-links.is-active path { animation: none !important; }
+  .is-featured .feature-marker { opacity: 0 !important; }
+  .project-tile.is-featured,.project-tile.is-featured-neighbor { box-shadow: none !important; }
+  .project-tile.is-featured .project-poster { transform: none !important; filter: none !important; }
   *, *::before, *::after {
     transition-duration: .001ms !important;
     animation-duration: .001ms !important;

@@ -69,8 +69,19 @@ async function checkCase(label,width,height,reduced=false) {
       await page.waitForTimeout(1050);
       const after = await card.evaluate(el=>getComputedStyle(el).transform);
       assert.notEqual(before,after,'autonomous motion is perceptible');
-      const waveCount = await page.locator('.project-tile.is-in-wave').count();
-      assert.ok(waveCount<=3,'wave never moves most tiles at once');
+      assert.equal(await page.locator('.project-tile.is-featured').count(),1,'one prominent card at a time');
+      const firstFocus = await page.locator('.project-tile.is-featured').first().getAttribute('style');
+      await page.screenshot({path:'qa/desktop-motion-active.jpg',type:'jpeg',quality:75});
+      await page.waitForTimeout(3150);
+      const secondFocus = await page.locator('.project-tile.is-featured').first().getAttribute('style');
+      assert.notEqual(firstFocus,secondFocus,'showcase migrates between projects');
+      const toggle=page.locator('.motion-toggle');
+      assert.equal(await toggle.getAttribute('aria-pressed'),'true','motion enabled on arrival');
+      await toggle.click();
+      assert.equal(await toggle.getAttribute('aria-pressed'),'false','pause button disables motion');
+      assert.equal(await page.locator('.board[data-active="false"]').count(),1,'board stops on pause');
+      await toggle.click();
+      assert.equal(await toggle.getAttribute('aria-pressed'),'true','motion restart works');
       
       const rect=await page.locator('.project-tile').first().boundingBox();
       assert.ok(rect,'tile has bounds');
@@ -80,6 +91,7 @@ async function checkCase(label,width,height,reduced=false) {
       assert.ok(await page.locator('.project-tile.is-magnetic').count()>1,'neighbor response');
     }
     if(reduced){
+      assert.equal(await page.locator('.motion-toggle:disabled').count(),1,'reduced motion disables activation');
       const anim = await page.locator('.project-tile').first().evaluate(el=>getComputedStyle(el).animationName);
       assert.equal(anim,'none','reduced motion disables arrival movement');
       await page.waitForTimeout(150);

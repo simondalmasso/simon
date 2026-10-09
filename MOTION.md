@@ -15,3 +15,7 @@ No GSAP, Remotion, Motion or Lottie runtime. Motion references informed the phys
 - Micro: poster drift, slightly stronger hover elevation, light following the cursor, arrow turn, and animated dashed links to three neighbors. Labels remain legible.
 - Physics: the existing drag spring and velocity are preserved. Pointer movement updates the selected card and neighboring tiles; the connections retarget roughly every 75ms.
 - Respect reduced-motion and touch. The rAF loop still stops offscreen or when the tab is hidden.
+
+## Spotlight motion (2026-10-09)
+
+The subtle relay was replaced by an obvious sequential showcase. Approximately every 2.95 seconds a different project becomes the foreground focus. The active panel rises by 27px, scales by 5.2%, receives a visible acid rim and an `IN FOCUS` label, while its screenshot zooms and the two closest panels move aside by up to 17px. On mobile the translations are clamped to 8px and the image/label emphasis remains visible. A `MOTION ON/OFF` control in WORK INDEX pauses and resumes the choreography. The project grid is still immediately available without any intro; manual hover/drag takes priority over the automated focus. Reduced-motion disables all automated transforms.
