@@ -1,0 +1,38 @@
+name: Browser UI QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - src/**
+      - scripts/browser-qa.mjs
+      - .github/workflows/browser-qa.yml
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run verify
+      - name: Install ephemeral Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install chromium --with-deps
+      - name: Test desktop mobile and reduced motion
+        run: node scripts/browser-qa.mjs
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simon-ui-qa
+          path: qa/
+          if-no-files-found: ignore
+          retention-days: 7

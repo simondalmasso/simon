@@ -256,6 +256,19 @@ h1 {
   transition: opacity 300ms ease;
 }
 .project-poster.is-loaded { opacity: 1; }
+/* LiVa's authentic capture opens on a nearly black video player.
+   Screen-blend lets the graphic fallback show through those dark pixels. */
+.project-tile:nth-child(8) .project-poster.is-loaded {
+  mix-blend-mode: screen;
+  opacity: .88;
+}
+.project-tile:nth-child(8) .preview-fallback {
+  background:
+    radial-gradient(ellipse at 28% 32%, rgba(115,241,233,.55), transparent 48%),
+    radial-gradient(ellipse at 74% 72%, rgba(133,81,249,.52), transparent 46%),
+    linear-gradient(130deg, #143c51, #2c2857 58%, #12222e);
+}
+
 .project-scrim {
   position: absolute;
   z-index: 2;
