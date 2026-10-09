@@ -9,7 +9,7 @@ const [html, css, js, headers, build] = await Promise.all([
 ]);
 const assertions=[
  ['semantic main',html.includes('<main')],
- ['single h1',(html.match(/<h1\\b/g)||[]).length===1],
+ ['single h1',html.split('<h1').length===2],
  ['skip link',html.includes('class="skip-link"')],
  ['work target',html.includes('id="work"')],
  ['no intro element',!html.includes('intro-splash')],

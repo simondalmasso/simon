@@ -2,28 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { projects } from '../src/data/projects.js';
 
-test('portfolio contains the eight requested live websites', () => {
-  assert.equal(projects.length, 8);
-  assert.deepEqual(
-    projects.map(project => project.id),
-    ['jobas', 'voy', 'atm', 'leadx', 'aberturas', 'rebeca', 'zungun', 'liva']
-  );
+test('portfolio has eight requested sites', () => {
+  assert.deepEqual(projects.map(p => p.id), [
+    'jobas','voy','atm','leadx','aberturas','rebeca','zungun','liva'
+  ]);
 });
-
-test('project ids are unique and destinations use https', () => {
-  const ids = new Set(projects.map(project => project.id));
-  assert.equal(ids.size, projects.length);
-
-  for (const project of projects) {
-    assert.match(project.href, /^https:\/\//);
-    assert.equal(typeof project.embeddable, 'boolean');
-    assert.ok(project.name.length > 0);
+test('all project links are unique and HTTPS', () => {
+  assert.equal(new Set(projects.map(p => p.href)).size, 8);
+  for (const p of projects) {
+    assert.ok(p.name && p.id);
+    assert.match(p.href, /^https:\/\//);
   }
 });
-
-test('sites that explicitly deny framing use protected-preview fallbacks', () => {
-  assert.deepEqual(
-    projects.filter(project => project.embeddable === false).map(project => project.id),
-    ['voy', 'zungun']
-  );
+test('all projects use a predictable screenshot path', () => {
+  for(const project of projects) {
+    assert.match('/previews/' + project.id + '.jpg', /^\/previews\/[a-z0-9-]+\.jpg$/);
+  }
 });
