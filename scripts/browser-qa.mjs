@@ -47,6 +47,29 @@ async function inspect(label,width,height,reduced=false){
    assert.equal(res.status(),200,id);
   }
   await page.screenshot({path:`qa/${label}-start.jpg`,type:'jpeg',quality:72});
+  if(!reduced){
+    const initial=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+    await page.waitForTimeout(1350);
+    const advanced=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+    assert.notEqual(initial,advanced,'continuous auto-rotation without interaction');
+  }
+  if(width>900&&!reduced){
+    const bounds=await page.locator('.orbit-scene').boundingBox();
+    const left={x:bounds.x+bounds.width*.14,y:bounds.y+bounds.height*.28};
+    const right={x:bounds.x+bounds.width*.86,y:bounds.y+bounds.height*.70};
+    await page.mouse.move(left.x,left.y);
+    await page.waitForTimeout(460);
+    const leftTilt=await page.locator('.orbit-track').evaluate(el=>getComputedStyle(el).transform);
+    await page.mouse.move(right.x,right.y);
+    await page.waitForTimeout(460);
+    const rightTilt=await page.locator('.orbit-track').evaluate(el=>getComputedStyle(el).transform);
+    assert.notEqual(leftTilt,rightTilt,'camera follows cursor');
+    const movingBefore=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+    await page.waitForTimeout(850);
+    const movingAfter=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+    assert.notEqual(movingBefore,movingAfter,'still rotates under mouse hover');
+    await page.screenshot({path:'qa/desktop-cursor-steering.jpg',type:'jpeg',quality:76});
+  }
   await page.locator('.orbit-next').click();
   await page.waitForTimeout(reduced?80:750);
   assert.equal(await page.locator('#orbit-name').innerText(),'VOY','next arrow selects next');

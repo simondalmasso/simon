@@ -11,12 +11,7 @@ const navigation = document.querySelector('#orbit-index-list');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 const wrap = (value,length)=>((value%length)+length)%length;
-const shortest = (a,b,length)=>{
-  let d=a-b;
-  if(d>length/2)d-=length;
-  if(d< -length/2)d+=length;
-  return d;
-};
+const shortest = (a,b,length)=>wrap(a-b+length/2,length)-length/2;
 let position = 0;
 let target = 0;
 let last = performance.now();
@@ -26,9 +21,16 @@ let dragMoved = false;
 let dragStartX = 0;
 let dragStartTarget = 0;
 let pointerId = null;
-let hovering = false;
+let cursorInside = false;
+let cursorAimX = 0;
+let cursorAimY = 0;
+let cursorX = 0;
+let cursorY = 0;
+let cameraPitch = 0;
+let cameraYaw = 0;
+let stageWidth = scene.clientWidth;
 let visible = true;
-let running = true;
+let running = false;
 let raf = 0;
 let selected = -1;
 let userPaused = false;
@@ -72,21 +74,19 @@ function updateSelected(index){
 }
 
 function calculate(){
-  const width=scene.clientWidth;
+  const width=stageWidth;
   const mobile=width<620;
   const radius=Math.min(width*(mobile?.72:.55),mobile?330:730);
-  const vertical=mobile?14:22;
-  const step=mobile?.68:.50;
-  const cardWidth=cards[0]?.getBoundingClientRect().width||300;
-  const stageHeight=scene.clientHeight;
+  const vertical=mobile?18:31;
+  const step=mobile?.71:.56;
   for(let i=0;i<cards.length;i++){
     const delta=shortest(i,position,cards.length);
     const magnitude=Math.abs(delta);
     const angle=delta*step;
     const x=Math.sin(angle)*radius;
     const y=vertical*Math.pow(magnitude,1.45);
-    const z=(Math.cos(angle)-1)*(mobile?180:280);
-    const rotate=-angle*(180/Math.PI)*.75;
+    const z=(Math.cos(angle)-1)*(mobile?225:390);
+    const rotate=-angle*(180/Math.PI)*.92;
     const scale=1-Math.min(magnitude,4)*(mobile?.058:.035);
     const opacity=clamp(1-Math.max(magnitude-2,0)*.28,.03,1);
     const card=cards[i];
@@ -112,34 +112,56 @@ function shift(by){
   syncAnimation();
 }
 
-function canAuto(now){return visible&&!document.hidden&&!reduced.matches&&!userPaused&&!hovering&&!dragging&&now>holdUntil;}
+function canAuto(now){return visible&&!document.hidden&&!reduced.matches&&!userPaused&&!dragging&&now>holdUntil;}
 function syncAnimation(){
   if(reduced.matches){
     target=Math.round(target);
     position=target;
+    track.style.transform='none';
     calculate();
     running=false;
     if(raf){cancelAnimationFrame(raf);raf=0;}
     return;
   }
+  if(userPaused){
+    target=position;
+    if(raf){cancelAnimationFrame(raf);raf=0;}
+    running=false;
+    calculate();
+    return;
+  }
+  if(!visible||document.hidden)return;
   if(raf)return;
   last=performance.now();
   raf=requestAnimationFrame(frame);
 }
 function frame(now){
   raf=0;
-  if(!visible||document.hidden){
+  if(!visible||document.hidden||reduced.matches||userPaused){
     running=false;
     return;
   }
-  const dt=Math.min(.042,(now-last)/1000||.016);
+  const dt=Math.min(.042,Math.max(.001,(now-last)/1000||.016));
   last=now;
+  const follow=1-Math.exp(-dt*5.4);
+  cursorX+=(cursorAimX-cursorX)*follow;
+  cursorY+=(cursorAimY-cursorY)*follow;
+  cameraYaw+=(cursorX*7.5-cameraYaw)*(1-Math.exp(-dt*5.1));
+  cameraPitch+=(-cursorY*4.2-cameraPitch)*(1-Math.exp(-dt*5.1));
+  track.style.transform=`rotateX(${cameraPitch.toFixed(3)}deg) rotateY(${cameraYaw.toFixed(3)}deg)`;
   const auto=canAuto(now);
-  if(auto)target+=dt*.185;
+  // Continuous orbit, plus cursor-directed speed and gentle reversal.
+  if(auto)target+=dt*clamp(.52+cursorX*.84,-.34,1.25);
   if(!dragging){
-    const response=1-Math.exp(-dt*(auto?5.5:10.5));
+    const response=1-Math.exp(-dt*(auto?6:11));
     position+=(target-position)*response;
     if(!auto&&Math.abs(target-position)<.0004)position=target;
+  }
+  // Normalize complete laps to keep numerical values bounded.
+  if(!dragging&&Math.abs(position)>32){
+    const laps=Math.trunc(position/projects.length);
+    position-=laps*projects.length;
+    target-=laps*projects.length;
   }
   calculate();
   running=true;
@@ -156,8 +178,23 @@ scene.addEventListener('keydown',event=>{
     shift(event.key==='ArrowRight'?1:-1);
   }
 });
-scene.addEventListener('mouseenter',()=>{hovering=true;holdUntil=performance.now()+800;});
-scene.addEventListener('mouseleave',()=>{hovering=false;holdUntil=performance.now()+750;});
+scene.addEventListener('pointerenter',event=>{
+  if(event.pointerType==='mouse'||event.pointerType==='pen')cursorInside=true;
+});
+scene.addEventListener('pointerleave',()=>{
+  cursorInside=false;
+  cursorAimX=0;
+  cursorAimY=0;
+});
+scene.addEventListener('pointermove',event=>{
+  if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||dragging||userPaused||reduced.matches)return;
+  const rect=scene.getBoundingClientRect();
+  const x=clamp((event.clientX-(rect.left+rect.width/2))/(rect.width*.44),-1,1);
+  const y=clamp((event.clientY-(rect.top+rect.height/2))/(rect.height*.44),-1,1);
+  cursorInside=true;
+  cursorAimX=Math.abs(x)<.055?0:x;
+  cursorAimY=Math.abs(y)<.055?0:y;
+},{passive:true});
 scene.addEventListener('pointerdown',event=>{
   if(event.button!==0&&event.pointerType==='mouse')return;
   if(reduced.matches)return;
@@ -173,6 +210,9 @@ scene.addEventListener('pointermove',event=>{
   if(!dragging&&Math.abs(distance)>7){
     dragging=true;
     dragMoved=true;
+    cursorInside=false;
+    cursorAimX=0;
+    cursorAimY=0;
     scene.classList.add('is-dragging');
     scene.setPointerCapture?.(event.pointerId);
   }
@@ -209,16 +249,25 @@ function updateMotion(){
   const canRun=!userPaused&&!reduced.matches;
   motionButton.setAttribute('aria-pressed',String(canRun));
   motionButton.disabled=reduced.matches;
-  motionLabel.textContent=canRun?'Pausar movimiento':'Movimiento pausado';
+  motionLabel.textContent=reduced.matches?'Movimiento reducido activo':(canRun?'Pausar movimiento':'Movimiento pausado');
   motionButton.setAttribute('aria-label',canRun?'Pausar rotación automática':'Activar rotación automática');
   if(!canRun)holdUntil=Number.POSITIVE_INFINITY;
-  else holdUntil=performance.now()+1100;
+  else holdUntil=0;
+  if(!canRun){
+    cursorInside=false;
+    cursorAimX=0;
+    cursorAimY=0;
+  }
   syncAnimation();
 }
 motionButton.addEventListener('click',()=>{userPaused=!userPaused;updateMotion();});
 reduced.addEventListener?.('change',updateMotion);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncAnimation();});
-new ResizeObserver(()=>{calculate();syncAnimation();}).observe(scene);
+new ResizeObserver(()=>{
+  stageWidth=scene.clientWidth;
+  calculate();
+  syncAnimation();
+}).observe(scene);
 new IntersectionObserver(([entry])=>{visible=Boolean(entry?.isIntersecting);if(visible)syncAnimation();},{threshold:.02}).observe(scene);
 updateSelected(0);
 calculate();

@@ -1,13 +1,13 @@
-# MOTION — 3D SPHERICAL CAROUSEL
+# MOTION — STEERABLE 3D CAROUSEL
 
-No opening splash.
+Portfolio opens directly, no splash.
 
-The project track uses CSS 3D transforms with a mathematical cylindrical projection:
-- angular offset based on distance from the current continuous position
-- horizontal x = radius · sin(offset · step)
-- depth z = depth · (cos(offset · step) - 1)
-- slight vertical y sag toward lateral cards; rotateY makes them face inward
+The eight real screenshots form a curved 3D carousel in CSS perspective. Cards use translate3d and rotateY, with side depth, shadow, and a small focused-image zoom.
 
-Animation is continuously interpolated by requestAnimationFrame at ~0.185 projects/second. Manual arrows/buttons smoothly target the chosen project and pause automatic rotation briefly. Dragging controls continuous position and snaps to the nearest card on release. On mouse hover, autoplay suspends. Pause button toggles autoplay.
+Autoplay starts immediately at ~0.52 projects/second. Hover does not pause rotation. Moving the cursor within the gallery smoothly changes the angular velocity; left can reverse the rotation, right accelerates it. The entire 3D track leans in pitch and yaw toward the pointer. Leaving returns to neutral.
 
-Performance: no image iframes, no WebGL, no GSAP, no layout measurements inside each frame beyond the stage width; screenshots are self-hosted and lazy. Animation stops when offscreen / tab hidden. On reduced motion, snap navigation is immediate and autoplay disabled.
+Positions use modulo wrap and are periodically normalized, so the carousel works over unlimited revolutions. The loop stops when the gallery is offscreen, the tab is hidden, or the user pauses.
+
+Manual arrow controls, individual project buttons, horizontal drag/touch snap and keyboard arrows remain. The pause button freezes position; reduced-motion disables autoplay and pointer steering, with a visible status label.
+
+The carousel caches stage width via ResizeObserver rather than reading card geometry each frame. No WebGL, videos, GSAP or heavy runtime dependencies.
