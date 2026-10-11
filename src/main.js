@@ -124,7 +124,7 @@ function syncAnimation(){
     return;
   }
   if(userPaused){
-    target=position;
+    position=target; // Manual navigation still works with autoplay paused.
     if(raf){cancelAnimationFrame(raf);raf=0;}
     running=false;
     calculate();
@@ -251,8 +251,10 @@ function updateMotion(){
   motionButton.disabled=reduced.matches;
   motionLabel.textContent=reduced.matches?'Movimiento reducido activo':(canRun?'Pausar movimiento':'Movimiento pausado');
   motionButton.setAttribute('aria-label',canRun?'Pausar rotación automática':'Activar rotación automática');
-  if(!canRun)holdUntil=Number.POSITIVE_INFINITY;
-  else holdUntil=0;
+  if(!canRun){
+    target=position;
+    holdUntil=Number.POSITIVE_INFINITY;
+  } else holdUntil=0;
   if(!canRun){
     cursorInside=false;
     cursorAimX=0;

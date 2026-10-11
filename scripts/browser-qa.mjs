@@ -70,6 +70,9 @@ async function inspect(label,width,height,reduced=false){
     assert.notEqual(movingBefore,movingAfter,'still rotates under mouse hover');
     await page.screenshot({path:'qa/desktop-cursor-steering.jpg',type:'jpeg',quality:76});
   }
+  await page.locator('.orbit-index button').first().click();
+  await page.waitForTimeout(reduced?80:900);
+  assert.equal(await page.locator('#orbit-name').innerText(),'JOBAS','index navigation selects JOBAS');
   await page.locator('.orbit-next').click();
   await page.waitForTimeout(reduced?80:750);
   assert.equal(await page.locator('#orbit-name').innerText(),'VOY','next arrow selects next');
@@ -81,7 +84,11 @@ async function inspect(label,width,height,reduced=false){
    const one=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
    await page.waitForTimeout(500);
    const two=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
-   assert.ok(one===two,'paused transform stable');
+   assert.equal(one,two,'paused transform stable');
+   await page.locator('.orbit-next').click();
+   assert.equal(await page.locator('#orbit-name').innerText(),'ATM','manual navigation while paused');
+   await page.locator('.orbit-prev').click();
+   assert.equal(await page.locator('#orbit-name').innerText(),'VOY','manual previous while paused');
    await page.locator('#orbit-motion').click();
    assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'true');
   }

@@ -11,3 +11,4 @@ Positions use modulo wrap and are periodically normalized, so the carousel works
 Manual arrow controls, individual project buttons, horizontal drag/touch snap and keyboard arrows remain. The pause button freezes position; reduced-motion disables autoplay and pointer steering, with a visible status label.
 
 The carousel caches stage width via ResizeObserver rather than reading card geometry each frame. No WebGL, videos, GSAP or heavy runtime dependencies.
+Pausing freezes autoplay but arrow, index and keyboard navigation remain available.
