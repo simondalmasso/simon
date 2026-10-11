@@ -300,6 +300,9 @@ updateMotion();
 
 copyEmail?.addEventListener('click',async()=>{
   const email='simondalmasso44@gmail.com';
+  // Never wait on clipboard permissions before showing actionable feedback.
+  copyFeedback.textContent='Correo: '+email;
+  copyEmail.textContent='Copiando…';
   let success=false;
   try{await navigator.clipboard.writeText(email);success=true;}
   catch{
