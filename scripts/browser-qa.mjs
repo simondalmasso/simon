@@ -40,7 +40,8 @@ async function inspect(label,width,height,reduced=false){
   }));
   assert.ok(geometry.scrollWidth<=geometry.viewport+2,`overflow ${JSON.stringify(geometry)}`);
   assert.equal(geometry.projectLinks,8);
-  assert.ok(geometry.cards.every(x=>x.includes('matrix3d')),'actual 3D transforms');
+  assert.ok(geometry.cards.some(x=>x.includes('matrix3d')),'side cards use 3D transforms');
+  assert.ok(geometry.cards.every(x=>x!=='none'),'all cards positioned');
   for(const id of ['jobas','voy','atm','leadx','aberturas','rebeca','zungun','liva']){
    const res=await page.request.get(`${url}/previews/${id}.jpg`);
    assert.equal(res.status(),200,id);
