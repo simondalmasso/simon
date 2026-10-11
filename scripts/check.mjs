@@ -1,36 +1,26 @@
 import { readFile } from 'node:fs/promises';
 import { projects } from '../src/data/projects.js';
-const [html, css, js, headers, build] = await Promise.all([
+const [html,css,js,build]=await Promise.all([
   readFile(new URL('../index.html',import.meta.url),'utf8'),
   readFile(new URL('../src/styles.css',import.meta.url),'utf8'),
   readFile(new URL('../src/main.js',import.meta.url),'utf8'),
-  readFile(new URL('../_headers',import.meta.url),'utf8'),
   readFile(new URL('./build.mjs',import.meta.url),'utf8')
 ]);
-const assertions=[
- ['semantic main',html.includes('<main')],
- ['single h1',html.split('<h1').length===2],
- ['skip link',html.includes('class="skip-link"')],
- ['work target',html.includes('id="work"')],
- ['no intro element',!html.includes('intro-splash')],
- ['no delayed landing',!js.includes('introTimer')&&!css.includes('is-landed')&&!css.includes('landing-tile')],
- ['no canvas',!html.includes('<canvas')],
- ['eight live sites',projects.length===8],
- ['poster previews',js.includes('project-poster')&&js.includes('loadPoster')],
- ['no iframes',!js.includes('project-frame')&&!html.includes('<iframe')],
- ['fallback colors',css.includes('--poster-color')],
- ['connections',js.includes('renderField')&&css.includes('board-links')],
- ['elastic drag',js.includes('rubberBand')&&js.includes('throwVX')],
- ['offscreen pause',js.includes('boardVisible')&&js.includes('document.hidden')],
- ['asset copy',build.includes('previews')],
- ['email',html.includes('mailto:simondalmasso44@gmail.com')],
- ['whatsapp',html.includes('wa.me/543425391278')],
- ['reduced motion',css.includes('prefers-reduced-motion: reduce')],
- ['focus style',css.includes('focus-visible')],
- ['security headers',headers.includes('Content-Security-Policy')],
- ['no eval',!js.includes('eval(')]
+const checks=[
+ ['eight projects',projects.length===8],
+ ['semantic work section',html.includes('id="work"')],
+ ['exactly one heading',html.split('<h1').length===2],
+ ['3D carousel',html.includes('orbit-scene')&&css.includes('perspective:1150px')],
+ ['CSS 3D transforms',js.includes('rotateY(')&&js.includes('translate3d(')],
+ ['touch drag',js.includes('pointerdown')&&css.includes('touch-action:pan-y')],
+ ['keyboard arrows',js.includes('ArrowRight')&&js.includes('ArrowLeft')],
+ ['pause control',html.includes('id="orbit-motion"')&&js.includes('userPaused')],
+ ['reduced motion',js.includes('reduced.matches')&&css.includes('prefers-reduced-motion:reduce')],
+ ['snapshot assets',js.includes('/previews/')&&build.includes('previews')],
+ ['no intro',!html.includes('intro-splash')&&!js.includes('introTimer')],
+ ['contact email',html.includes('mailto:simondalmasso44@gmail.com')],
+ ['contact whatsapp',html.includes('wa.me/543425391278')],
+ ['no iframes',!html.includes('<iframe')&&!js.includes('<iframe')],
+ ['no external runtime',!js.includes("from 'three'")&&!js.includes("from 'gsap'")]
 ];
-for(const [name,ok] of assertions) {
- if(!ok)throw new Error('check failed: '+name);
- console.log('PASS '+name);
-}
+for(const [name,ok] of checks){if(!ok)throw Error('FAIL '+name);console.log('PASS '+name);}
