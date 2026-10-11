@@ -37,6 +37,7 @@ let visible = true;
 let running = false;
 let raf = 0;
 let selected = -1;
+let manualSelection = null;
 let userPaused = false;
 let userMotionOverride = false;
 let lastStatusUpdate = 0;
@@ -104,17 +105,27 @@ function calculate(){
     card.querySelector('a').tabIndex=magnitude<1.4?0:-1;
     card.setAttribute('aria-hidden',String(magnitude>2.65));
   }
-  updateSelected(wrap(Math.round(position),cards.length));
+  const settled = Math.abs(target-position) < .065;
+  if(manualSelection !== null && !settled){
+    updateSelected(manualSelection); // Explicit clicks must not show yesterday's card.
+  }else{
+    manualSelection=null;
+    updateSelected(wrap(Math.round(position),cards.length));
+  }
 }
 
 function navigateTo(index){
   const current=Math.round(target);
   target=current+shortest(index,wrap(current,projects.length),projects.length);
+  manualSelection=wrap(index,projects.length);
+  updateSelected(manualSelection); // Visible response within the same click event.
   holdUntil=performance.now()+3500;
   syncAnimation();
 }
 function shift(by){
   target=Math.round(target)+by;
+  manualSelection=wrap(Math.round(target),projects.length);
+  updateSelected(manualSelection);
   holdUntil=performance.now()+3500;
   syncAnimation();
 }
@@ -213,6 +224,7 @@ scene.addEventListener('pointerdown',event=>{
   pointerId=event.pointerId;
   dragStartX=event.clientX;
   dragStartTarget=target;
+  manualSelection=null;
   holdUntil=performance.now()+2500;
 });
 scene.addEventListener('pointermove',event=>{

@@ -101,8 +101,13 @@ async function inspect(label,width,height,reduced=false){
    assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'true');
   }
   await page.locator('.orbit-index button').nth(4).click();
-  await page.waitForTimeout(reduced?80:750);
-  assert.equal(await page.locator('#orbit-name').innerText(),'Aberturas Avenida');
+  assert.equal(await page.locator('#orbit-name').innerText(),'Aberturas Avenida',
+    'manual project selection updates the label synchronously');
+  assert.ok((await page.locator('#orbit-open').getAttribute('href')).includes('aberturasavenida'),
+    'selected action updates synchronously with navigation');
+  await page.waitForTimeout(reduced?80:900);
+  assert.equal(await page.locator('#orbit-name').innerText(),'Aberturas Avenida',
+    'selection is held until the carousel reaches its target');
   await page.screenshot({path:`qa/${label}-gallery.jpg`,type:'jpeg',quality:72});
   assert.equal(await page.locator('.top-contact').getAttribute('href'),'#contact');
   await page.locator('.top-contact').click();
