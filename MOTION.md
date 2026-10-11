@@ -12,3 +12,5 @@ Manual arrow controls, individual project buttons, horizontal drag/touch snap an
 
 The carousel caches stage width via ResizeObserver rather than reading card geometry each frame. No WebGL, videos, GSAP or heavy runtime dependencies.
 Pausing freezes autoplay but arrow, index and keyboard navigation remain available.
+## Contact and enhanced motion (2026-10-11)
+Hablemos navigates to #contact. Email copy button provides a visible confirmation or fallback address. 3D carousel default velocity ~0.86 projects/s, pointer steers from -0.44 to +2.16, camera pitch up to 7 degrees and yaw up to 12. Live HUD tracks motion status and lap progress. Reduced motion starts still but a user can explicitly opt into animation.

@@ -52,6 +52,7 @@ async function inspect(label,width,height,reduced=false){
     await page.waitForTimeout(1350);
     const advanced=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
     assert.notEqual(initial,advanced,'continuous auto-rotation without interaction');
+    assert.equal(await page.locator('#orbit-live-status').innerText(),'GIRANDO EN VIVO');
   }
   if(width>900&&!reduced){
     const bounds=await page.locator('.orbit-scene').boundingBox();
@@ -77,7 +78,14 @@ async function inspect(label,width,height,reduced=false){
   await page.waitForTimeout(reduced?80:750);
   assert.equal(await page.locator('#orbit-name').innerText(),'VOY','next arrow selects next');
   if(reduced){
-   assert.equal(await page.locator('#orbit-motion:disabled').count(),1);
+   assert.equal(await page.locator('#orbit-motion:disabled').count(),0);
+   assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'false');
+   await page.locator('#orbit-motion').click();
+   assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'true','explicit opt-in animates');
+   const reducedBefore=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+   await page.waitForTimeout(850);
+   const reducedAfter=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+   assert.notEqual(reducedBefore,reducedAfter,'carousel animates after user opt-in');
   } else {
    await page.locator('#orbit-motion').click();
    assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'false');
@@ -96,6 +104,11 @@ async function inspect(label,width,height,reduced=false){
   await page.waitForTimeout(reduced?80:750);
   assert.equal(await page.locator('#orbit-name').innerText(),'Aberturas Avenida');
   await page.screenshot({path:`qa/${label}-gallery.jpg`,type:'jpeg',quality:72});
+  assert.equal(await page.locator('.top-contact').getAttribute('href'),'#contact');
+  await page.locator('.top-contact').click();
+  assert.equal(new URL(page.url()).hash,'#contact','Hablemos goes to contact');
+  await page.locator('#copy-email').click();
+  assert.ok((await page.locator('#copy-feedback').innerText()).includes('simondalmasso44@gmail.com'),'email copying visible');
   assert.deepEqual(errors,[]);
   total++; console.log(`QA PASS ${label} cards=8 navigation=ok overflow=0 reduced=${reduced}`);
  }finally{await context.close();}

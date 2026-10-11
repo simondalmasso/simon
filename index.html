@@ -18,7 +18,7 @@
       <a href="#about">Servicios</a>
       <a href="#contact">Contacto</a>
     </nav>
-    <a class="top-contact" href="mailto:simondalmasso44@gmail.com">Hablemos <span aria-hidden="true">↗</span></a>
+    <a class="top-contact" href="#contact" aria-label="Ir a las opciones de contacto">Hablemos <span aria-hidden="true">↗</span></a>
   </header>
   <main>
     <section id="work" class="hero" aria-labelledby="hero-title">
@@ -32,6 +32,10 @@
         <div class="orbit-head">
           <span>TRABAJOS SELECCIONADOS <span class="orbit-total">/ 08</span></span>
           <span class="orbit-hint">SEGUÍ EL CURSOR · ARRASTRÁ <span aria-hidden="true">↔</span></span>
+        </div>
+        <div class="orbit-telemetry" aria-hidden="true">
+          <span class="orbit-status-dot"></span><span id="orbit-live-status">GIRANDO EN VIVO</span>
+          <span class="orbit-progress"><i id="orbit-progress-fill"></i></span><span>3D / 08</span>
         </div>
         <div class="orbit-scene" id="orbit-scene" tabindex="0" role="region" aria-roledescription="carrusel tridimensional" aria-label="Ocho proyectos web. Usá las flechas izquierda y derecha o arrastrá para navegar">
           <div class="orbit-track" id="orbit-track"></div>
@@ -74,8 +78,10 @@
       <p>Proyectos, colaboraciones, ideas que necesitan convertirse en algo real.</p>
       <div class="contact-links">
         <a href="mailto:simondalmasso44@gmail.com"><span class="contact-symbol" aria-hidden="true">✉</span> Escribime un email <span aria-hidden="true">↗</span></a>
+        <button class="contact-copy" type="button" id="copy-email">Copiar email <span aria-hidden="true">⧉</span></button>
         <a href="https://wa.me/543425391278" target="_blank" rel="noopener"><span class="contact-symbol" aria-hidden="true">↗</span> Hablemos por WhatsApp <span aria-hidden="true">↗</span></a>
       </div>
+      <p id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></p>
     </section>
   </main>
   <footer><span>© SIMÓN DALMASSO</span><span>SOFTWARE · SYSTEMS · STORE · CRM · UX</span><a href="#top">VOLVER ARRIBA ↑</a></footer>

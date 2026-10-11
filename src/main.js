@@ -7,6 +7,10 @@ const nameText = document.querySelector('#orbit-name');
 const openLink = document.querySelector('#orbit-open');
 const motionButton = document.querySelector('#orbit-motion');
 const motionLabel = document.querySelector('#orbit-motion-label');
+const liveStatus = document.querySelector('#orbit-live-status');
+const progressFill = document.querySelector('#orbit-progress-fill');
+const copyEmail = document.querySelector('#copy-email');
+const copyFeedback = document.querySelector('#copy-feedback');
 const navigation = document.querySelector('#orbit-index-list');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
@@ -34,6 +38,9 @@ let running = false;
 let raf = 0;
 let selected = -1;
 let userPaused = false;
+let userMotionOverride = false;
+let lastStatusUpdate = 0;
+const motionReduced = () => reduced.matches && !userMotionOverride;
 const cards = [];
 const navButtons = [];
 
@@ -112,9 +119,9 @@ function shift(by){
   syncAnimation();
 }
 
-function canAuto(now){return visible&&!document.hidden&&!reduced.matches&&!userPaused&&!dragging&&now>holdUntil;}
+function canAuto(now){return visible&&!document.hidden&&!motionReduced()&&!userPaused&&!dragging&&now>holdUntil;}
 function syncAnimation(){
-  if(reduced.matches){
+  if(motionReduced()){
     target=Math.round(target);
     position=target;
     track.style.transform='none';
@@ -137,7 +144,7 @@ function syncAnimation(){
 }
 function frame(now){
   raf=0;
-  if(!visible||document.hidden||reduced.matches||userPaused){
+  if(!visible||document.hidden||motionReduced()||userPaused){
     running=false;
     return;
   }
@@ -146,12 +153,12 @@ function frame(now){
   const follow=1-Math.exp(-dt*5.4);
   cursorX+=(cursorAimX-cursorX)*follow;
   cursorY+=(cursorAimY-cursorY)*follow;
-  cameraYaw+=(cursorX*7.5-cameraYaw)*(1-Math.exp(-dt*5.1));
-  cameraPitch+=(-cursorY*4.2-cameraPitch)*(1-Math.exp(-dt*5.1));
+  cameraYaw+=(cursorX*12-cameraYaw)*(1-Math.exp(-dt*5.1));
+  cameraPitch+=(-cursorY*7-cameraPitch)*(1-Math.exp(-dt*5.1));
   track.style.transform=`rotateX(${cameraPitch.toFixed(3)}deg) rotateY(${cameraYaw.toFixed(3)}deg)`;
   const auto=canAuto(now);
   // Continuous orbit, plus cursor-directed speed and gentle reversal.
-  if(auto)target+=dt*clamp(.52+cursorX*.84,-.34,1.25);
+  if(auto)target+=dt*clamp(.86+cursorX*1.3,-.44,2.16);
   if(!dragging){
     const response=1-Math.exp(-dt*(auto?6:11));
     position+=(target-position)*response;
@@ -164,6 +171,10 @@ function frame(now){
     target-=laps*projects.length;
   }
   calculate();
+  if(now-lastStatusUpdate>110){
+    progressFill.style.transform=`scaleX(${(wrap(position,projects.length)/projects.length).toFixed(4)})`;
+    lastStatusUpdate=now;
+  }
   running=true;
   raf=requestAnimationFrame(frame);
 }
@@ -187,7 +198,7 @@ scene.addEventListener('pointerleave',()=>{
   cursorAimY=0;
 });
 scene.addEventListener('pointermove',event=>{
-  if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||dragging||userPaused||reduced.matches)return;
+  if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||dragging||userPaused||motionReduced())return;
   const rect=scene.getBoundingClientRect();
   const x=clamp((event.clientX-(rect.left+rect.width/2))/(rect.width*.44),-1,1);
   const y=clamp((event.clientY-(rect.top+rect.height/2))/(rect.height*.44),-1,1);
@@ -197,7 +208,7 @@ scene.addEventListener('pointermove',event=>{
 },{passive:true});
 scene.addEventListener('pointerdown',event=>{
   if(event.button!==0&&event.pointerType==='mouse')return;
-  if(reduced.matches)return;
+  if(motionReduced())return;
   dragging=false;dragMoved=false;
   pointerId=event.pointerId;
   dragStartX=event.clientX;
@@ -246,24 +257,36 @@ scene.addEventListener('click',event=>{
 },true);
 
 function updateMotion(){
-  const canRun=!userPaused&&!reduced.matches;
+  const accessibleStill = motionReduced();
+  const canRun = !userPaused && !accessibleStill;
+  motionButton.disabled=false;
   motionButton.setAttribute('aria-pressed',String(canRun));
-  motionButton.disabled=reduced.matches;
-  motionLabel.textContent=reduced.matches?'Movimiento reducido activo':(canRun?'Pausar movimiento':'Movimiento pausado');
-  motionButton.setAttribute('aria-label',canRun?'Pausar rotación automática':'Activar rotación automática');
+  const label=accessibleStill?'Activar movimiento 3D':(canRun?'Pausar movimiento':'Reanudar movimiento');
+  motionLabel.textContent=label;
+  motionButton.setAttribute('aria-label',label);
+  liveStatus.textContent=canRun?'GIRANDO EN VIVO':(accessibleStill?'MOVIMIENTO REDUCIDO':'GIRO PAUSADO');
   if(!canRun){
     target=position;
     holdUntil=Number.POSITIVE_INFINITY;
-  } else holdUntil=0;
-  if(!canRun){
-    cursorInside=false;
-    cursorAimX=0;
-    cursorAimY=0;
+    cursorAimX=0;cursorAimY=0;
+    progressFill.style.transform=`scaleX(${(wrap(position,projects.length)/projects.length).toFixed(4)})`;
+  }else{
+    holdUntil=0;
   }
   syncAnimation();
 }
-motionButton.addEventListener('click',()=>{userPaused=!userPaused;updateMotion();});
-reduced.addEventListener?.('change',updateMotion);
+motionButton.addEventListener('click',()=>{
+  if(motionReduced()){
+    userMotionOverride=true; // explicit opt-in is allowed, never automatic
+    userPaused=false;
+  }else userPaused=!userPaused;
+  updateMotion();
+});
+reduced.addEventListener?.('change',()=>{
+  userMotionOverride=false;
+  userPaused=false;
+  updateMotion();
+});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncAnimation();});
 new ResizeObserver(()=>{
   stageWidth=scene.clientWidth;
@@ -274,3 +297,18 @@ new IntersectionObserver(([entry])=>{visible=Boolean(entry?.isIntersecting);if(v
 updateSelected(0);
 calculate();
 updateMotion();
+
+copyEmail?.addEventListener('click',async()=>{
+  const email='simondalmasso44@gmail.com';
+  let success=false;
+  try{await navigator.clipboard.writeText(email);success=true;}
+  catch{
+    const field=document.createElement('textarea');
+    field.value=email;field.style.position='fixed';field.style.opacity='0';
+    document.body.appendChild(field);field.focus();field.select();
+    try{success=document.execCommand('copy');}catch{}
+    field.remove();
+  }
+  copyFeedback.textContent=success?'Email copiado: '+email:'Email: '+email;
+  copyEmail.textContent=success?'Email copiado ✓':'Ver email';
+});
