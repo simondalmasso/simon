@@ -24,8 +24,9 @@ const checks=[
  ['contact email',html.includes('mailto:simondalmasso44@gmail.com')],
  ['primary CTA goes to contact',html.includes('class="top-contact" href="#contact"')],
  ['copyable email',html.includes('id="copy-email"')&&js.includes('navigator.clipboard.writeText')],
- ['animated status',html.includes('orbit-live-status')&&js.includes('GIRANDO EN VIVO')],
- ['explicit reduced motion opt-in',js.includes('userMotionOverride=true')],
+ ['no technical motion HUD',!html.includes('orbit-live-status')&&!html.includes('MOVIMIENTO REDUCIDO')],
+ ['no OS autoplay lock',!js.includes('motionReduced()')&&!js.includes('reduced.matches')],
+ ['motion pause persists',js.includes('localStorage.setItem(pausePreferenceKey')],
  ['contact whatsapp',html.includes('wa.me/543425391278')],
  ['no iframes',!html.includes('<iframe')&&!js.includes('<iframe')],
  ['no external runtime',!js.includes("from 'three'")&&!js.includes("from 'gsap'")]

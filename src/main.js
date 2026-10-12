@@ -7,12 +7,10 @@ const nameText = document.querySelector('#orbit-name');
 const openLink = document.querySelector('#orbit-open');
 const motionButton = document.querySelector('#orbit-motion');
 const motionLabel = document.querySelector('#orbit-motion-label');
-const liveStatus = document.querySelector('#orbit-live-status');
-const progressFill = document.querySelector('#orbit-progress-fill');
 const copyEmail = document.querySelector('#copy-email');
 const copyFeedback = document.querySelector('#copy-feedback');
 const navigation = document.querySelector('#orbit-index-list');
-const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
 const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 const wrap = (value,length)=>((value%length)+length)%length;
 const shortest = (a,b,length)=>wrap(a-b+length/2,length)-length/2;
@@ -25,7 +23,6 @@ let dragMoved = false;
 let dragStartX = 0;
 let dragStartTarget = 0;
 let pointerId = null;
-let cursorInside = false;
 let cursorAimX = 0;
 let cursorAimY = 0;
 let cursorX = 0;
@@ -34,14 +31,12 @@ let cameraPitch = 0;
 let cameraYaw = 0;
 let stageWidth = scene.clientWidth;
 let visible = true;
-let running = false;
 let raf = 0;
 let selected = -1;
 let manualSelection = null;
+const pausePreferenceKey = 'simon-orbit-paused';
 let userPaused = false;
-let userMotionOverride = false;
-let lastStatusUpdate = 0;
-const motionReduced = () => reduced.matches && !userMotionOverride;
+try { userPaused = localStorage.getItem(pausePreferenceKey) === 'true'; } catch { /* storage disabled */ }
 const cards = [];
 const navButtons = [];
 
@@ -130,21 +125,11 @@ function shift(by){
   syncAnimation();
 }
 
-function canAuto(now){return visible&&!document.hidden&&!motionReduced()&&!userPaused&&!dragging&&now>holdUntil;}
+function canAuto(now){return visible&&!document.hidden&&!userPaused&&!dragging&&now>holdUntil;}
 function syncAnimation(){
-  if(motionReduced()){
-    target=Math.round(target);
-    position=target;
-    track.style.transform='none';
-    calculate();
-    running=false;
-    if(raf){cancelAnimationFrame(raf);raf=0;}
-    return;
-  }
   if(userPaused){
     position=target; // Manual navigation still works with autoplay paused.
     if(raf){cancelAnimationFrame(raf);raf=0;}
-    running=false;
     calculate();
     return;
   }
@@ -155,8 +140,7 @@ function syncAnimation(){
 }
 function frame(now){
   raf=0;
-  if(!visible||document.hidden||motionReduced()||userPaused){
-    running=false;
+  if(!visible||document.hidden||userPaused){
     return;
   }
   const dt=Math.min(.042,Math.max(.001,(now-last)/1000||.016));
@@ -182,11 +166,6 @@ function frame(now){
     target-=laps*projects.length;
   }
   calculate();
-  if(now-lastStatusUpdate>110){
-    progressFill.style.transform=`scaleX(${(wrap(position,projects.length)/projects.length).toFixed(4)})`;
-    lastStatusUpdate=now;
-  }
-  running=true;
   raf=requestAnimationFrame(frame);
 }
 
@@ -200,26 +179,20 @@ scene.addEventListener('keydown',event=>{
     shift(event.key==='ArrowRight'?1:-1);
   }
 });
-scene.addEventListener('pointerenter',event=>{
-  if(event.pointerType==='mouse'||event.pointerType==='pen')cursorInside=true;
-});
 scene.addEventListener('pointerleave',()=>{
-  cursorInside=false;
   cursorAimX=0;
   cursorAimY=0;
 });
 scene.addEventListener('pointermove',event=>{
-  if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||dragging||userPaused||motionReduced())return;
+  if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||dragging||userPaused)return;
   const rect=scene.getBoundingClientRect();
   const x=clamp((event.clientX-(rect.left+rect.width/2))/(rect.width*.44),-1,1);
   const y=clamp((event.clientY-(rect.top+rect.height/2))/(rect.height*.44),-1,1);
-  cursorInside=true;
   cursorAimX=Math.abs(x)<.055?0:x;
   cursorAimY=Math.abs(y)<.055?0:y;
 },{passive:true});
 scene.addEventListener('pointerdown',event=>{
   if(event.button!==0&&event.pointerType==='mouse')return;
-  if(motionReduced())return;
   dragging=false;dragMoved=false;
   pointerId=event.pointerId;
   dragStartX=event.clientX;
@@ -233,8 +206,7 @@ scene.addEventListener('pointermove',event=>{
   if(!dragging&&Math.abs(distance)>7){
     dragging=true;
     dragMoved=true;
-    cursorInside=false;
-    cursorAimX=0;
+      cursorAimX=0;
     cursorAimY=0;
     scene.classList.add('is-dragging');
     scene.setPointerCapture?.(event.pointerId);
@@ -269,34 +241,21 @@ scene.addEventListener('click',event=>{
 },true);
 
 function updateMotion(){
-  const accessibleStill = motionReduced();
-  const canRun = !userPaused && !accessibleStill;
+  const playing=!userPaused;
   motionButton.disabled=false;
-  motionButton.setAttribute('aria-pressed',String(canRun));
-  const label=accessibleStill?'Activar movimiento 3D':(canRun?'Pausar movimiento':'Reanudar movimiento');
-  motionLabel.textContent=label;
-  motionButton.setAttribute('aria-label',label);
-  liveStatus.textContent=canRun?'GIRANDO EN VIVO':(accessibleStill?'MOVIMIENTO REDUCIDO':'GIRO PAUSADO');
-  if(!canRun){
+  motionButton.setAttribute('aria-pressed',String(playing));
+  motionButton.setAttribute('aria-label',playing?'Pausar giro del carrusel':'Reanudar giro del carrusel');
+  motionLabel.textContent=playing?'Pausar':'Reanudar';
+  if(userPaused){
     target=position;
     holdUntil=Number.POSITIVE_INFINITY;
     cursorAimX=0;cursorAimY=0;
-    progressFill.style.transform=`scaleX(${(wrap(position,projects.length)/projects.length).toFixed(4)})`;
-  }else{
-    holdUntil=0;
-  }
+  } else holdUntil=0;
   syncAnimation();
 }
 motionButton.addEventListener('click',()=>{
-  if(motionReduced()){
-    userMotionOverride=true; // explicit opt-in is allowed, never automatic
-    userPaused=false;
-  }else userPaused=!userPaused;
-  updateMotion();
-});
-reduced.addEventListener?.('change',()=>{
-  userMotionOverride=false;
-  userPaused=false;
+  userPaused=!userPaused;
+  try { localStorage.setItem(pausePreferenceKey,String(userPaused)); } catch { /* continue without storage */ }
   updateMotion();
 });
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncAnimation();});

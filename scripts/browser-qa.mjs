@@ -47,12 +47,11 @@ async function inspect(label,width,height,reduced=false){
    assert.equal(res.status(),200,id);
   }
   await page.screenshot({path:`qa/${label}-start.jpg`,type:'jpeg',quality:72});
-  if(!reduced){
+  {
     const initial=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
     await page.waitForTimeout(1350);
     const advanced=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
-    assert.notEqual(initial,advanced,'continuous auto-rotation without interaction');
-    assert.equal(await page.locator('#orbit-live-status').innerText(),'GIRANDO EN VIVO');
+    assert.notEqual(initial,advanced,'autoplay moves even with OS reduced-motion preference');
   }
   if(width>900&&!reduced){
     const bounds=await page.locator('.orbit-scene').boundingBox();
@@ -77,28 +76,29 @@ async function inspect(label,width,height,reduced=false){
   await page.locator('.orbit-next').click();
   await page.waitForTimeout(reduced?80:750);
   assert.equal(await page.locator('#orbit-name').innerText(),'VOY','next arrow selects next');
-  if(reduced){
-   assert.equal(await page.locator('#orbit-motion:disabled').count(),0);
-   assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'false');
-   await page.locator('#orbit-motion').click();
-   assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'true','explicit opt-in animates');
-   const reducedBefore=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
-   await page.waitForTimeout(850);
-   const reducedAfter=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
-   assert.notEqual(reducedBefore,reducedAfter,'carousel animates after user opt-in');
-  } else {
-   await page.locator('#orbit-motion').click();
-   assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'false');
-   const one=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
-   await page.waitForTimeout(500);
-   const two=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
-   assert.equal(one,two,'paused transform stable');
-   await page.locator('.orbit-next').click();
-   assert.equal(await page.locator('#orbit-name').innerText(),'ATM','manual navigation while paused');
-   await page.locator('.orbit-prev').click();
-   assert.equal(await page.locator('#orbit-name').innerText(),'VOY','manual previous while paused');
-   await page.locator('#orbit-motion').click();
-   assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'true');
+  {
+    assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'true','starts active');
+    await page.locator('#orbit-motion').click();
+    assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'false','pause available');
+    const before=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+    await page.waitForTimeout(500);
+    const after=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+    assert.equal(before,after,'pause freezes transform');
+    assert.equal(await page.evaluate(()=>localStorage.getItem('simon-orbit-paused')),'true','pause stored');
+    await page.locator('.orbit-next').click();
+    assert.equal(await page.locator('#orbit-name').innerText(),'ATM','next works paused');
+    await page.locator('.orbit-prev').click();
+    assert.equal(await page.locator('#orbit-name').innerText(),'VOY','previous works paused');
+    await page.reload({waitUntil:'load'});
+    assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'false','pause persists across reload');
+    await page.locator('#orbit-motion').click();
+    assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'true','resume available');
+    assert.equal(await page.evaluate(()=>localStorage.getItem('simon-orbit-paused')),'false','resumed preference stored');
+    const resumedBefore=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
+    await page.waitForTimeout(1100);
+    assert.notEqual(resumedBefore,
+      await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform),
+      'resume rotates after reload');
   }
   await page.locator('.orbit-index button').nth(4).click();
   assert.equal(await page.locator('#orbit-name').innerText(),'Aberturas Avenida',

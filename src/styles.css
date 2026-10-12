@@ -55,6 +55,8 @@ a{color:inherit}button{font:inherit}button,a{-webkit-tap-highlight-color:transpa
 .motion-dot{width:6px;height:6px;background:#a1cc40;border-radius:50%;box-shadow:0 0 0 4px rgba(174,204,102,.16)}
 .orbit-motion[aria-pressed="false"] .motion-dot{background:#9fa79d;box-shadow:none}
 .orbit-motion:disabled{opacity:.6;cursor:not-allowed}
+.orbit-motion[aria-pressed="true"]{background:var(--acid);border-color:#829c24;color:var(--ink)}
+.orbit-motion[aria-pressed="true"] .motion-dot{background:var(--ink);box-shadow:none}
 .orbit-index{max-width:1180px;margin:24px auto 0;padding:14px clamp(22px,4vw,56px) 0;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
 .orbit-index button{background:transparent;color:#888e89;border:none;padding:8px 10px;border-radius:50px;font:650 10px var(--mono);letter-spacing:.02em;transition:background .2s,color .2s}
 .orbit-index button:hover{color:var(--ink)}.orbit-index button[aria-pressed="true"]{color:var(--ink);background:var(--acid)}
@@ -79,14 +81,8 @@ footer{min-height:95px;background:#171b17;border-top:1px solid #353b35;display:f
 footer a{text-decoration:none;color:#f6f8f2}
 @media(max-width:900px){.topbar nav{gap:15px}.hero h1{font-size:clamp(74px,10vw,104px)}.orbit-scene{height:470px}.orbit-card{--orb-w:clamp(265px,36vw,330px)}.orbit-controls{grid-template-columns:auto 1fr;gap:18px}.orbit-current{grid-row:2;grid-column:1/-1;justify-content:center}.orbit-motion{grid-column:2;grid-row:1}.services-layout{gap:40px;grid-template-columns:1fr}.services-copy{max-width:650px}}
 @media(max-width:620px){.topbar{height:64px;padding:0 19px}.brand{font-size:16px}.brand-glyph{width:26px;height:26px}.topbar nav{display:none}.top-contact{padding:10px 13px;font-size:11px}.hero{padding-top:40px}.hero-heading{padding:0 15px}.hero-overline{font-size:8px;gap:7px}.hero-edition{display:none}.hero h1{font-size:clamp(58px,15.5vw,92px);letter-spacing:-.085em;margin:22px 0 16px}.hero-subtitle{font-size:12px;margin-top:24px}.orbit-block{margin-top:40px}.orbit-head{font-size:8px;padding:0 18px}.orbit-hint{font-size:8px}.orbit-scene{height:355px;perspective:850px;mask-image:linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)}.orbit-card{--orb-w:clamp(215px,63vw,285px);border-radius:9px}.card-copy strong{font-size:27px}.orbit-controls{padding:4px 18px 0;gap:12px}.orbit-pager button{height:38px;width:38px}.orbit-position{margin-left:4px;font-size:11px}.orbit-current{flex-wrap:wrap;gap:7px}.orbit-current-label{display:none}.orbit-current strong{font-size:17px}.orbit-current a{font-size:11px}.orbit-motion{font-size:10px;padding:8px 9px}.orbit-index{margin-top:16px;padding:12px 13px 0;justify-content:center}.orbit-index button{font-size:9px;padding:8px}.hero-outro{padding:0 20px;margin-top:25px;font-size:11px}.hero-outro span{display:none}.services{padding:84px 24px}.section-overline{font-size:9px}.section-overline span:last-child{display:none}.services-layout{margin-top:39px}.services h2,.contact h2{font-size:clamp(52px,11vw,70px)}.services-copy>p{font-size:19px}.contact{padding:100px 18px}.contact-links{flex-direction:column}.contact-links a{width:100%;max-width:400px;margin:auto}footer{display:flex;flex-wrap:wrap;padding:22px;font-size:9px}footer span:nth-child(2){display:none}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.orbit-scene{cursor:default}.orbit-card{will-change:auto;transition:none}.orbit-card img{transition:none}*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.orbit-card{transition:none}.orbit-card img{transition:none}}
 
-.orbit-telemetry{max-width:1180px;margin:12px auto -8px;padding:0 clamp(22px,4vw,56px);display:flex;align-items:center;gap:10px;color:#586258;font:700 10px/1.5 var(--mono);letter-spacing:.1em}
-.orbit-status-dot{height:8px;width:8px;flex:0 0 8px;background:#a1cb33;border-radius:50%;box-shadow:0 0 0 4px #ddebba;animation:status-pulse 1.2s ease-in-out infinite}
-.orbit-progress{height:3px;max-width:160px;min-width:48px;flex:1;background:#d7dfce;margin-left:6px;overflow:hidden;border-radius:30px}
-.orbit-progress i{display:block;height:100%;width:100%;background:#91b622;transform:scaleX(0);transform-origin:left;will-change:transform}
-@keyframes status-pulse{50%{opacity:.35;box-shadow:0 0 0 8px #ddebba}}
-body:has(.orbit-motion[aria-pressed="false"]) .orbit-status-dot{animation:none;background:#9ba29a;box-shadow:none}
 #contact{scroll-margin-top:22px}
 #contact:target{animation:contact-arrival 1.2s ease-out}
 @keyframes contact-arrival{0%,30%{box-shadow:inset 0 0 0 6px #c6e954}100%{box-shadow:inset 0 0 0 0 transparent}}

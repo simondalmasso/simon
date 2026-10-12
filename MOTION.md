@@ -1,18 +1,7 @@
-# MOTION — STEERABLE 3D CAROUSEL
+# 3D CAROUSEL MOTION
 
-Portfolio opens directly, no splash.
+The eight live project screenshots rotate automatically from the first frame. Default angular speed is about 0.86 projects per second and cursor position steers direction and camera inclination. The carousel is animated with CSS 3D transforms and requestAnimationFrame, without a splash or heavy graphics libraries.
 
-The eight real screenshots form a curved 3D carousel in CSS perspective. Cards use translate3d and rotateY, with side depth, shadow, and a small focused-image zoom.
+The visitor has a simple Pausar/Reanudar control. Their explicit pause choice is saved in localStorage and survives reloads; keyboard arrows, selection and drag remain available. The animation loop stops when the tab is hidden, the carousel leaves the viewport, or the user pauses.
 
-Autoplay starts immediately at ~0.52 projects/second. Hover does not pause rotation. Moving the cursor within the gallery smoothly changes the angular velocity; left can reverse the rotation, right accelerates it. The entire 3D track leans in pitch and yaw toward the pointer. Leaving returns to neutral.
-
-Positions use modulo wrap and are periodically normalized, so the carousel works over unlimited revolutions. The loop stops when the gallery is offscreen, the tab is hidden, or the user pauses.
-
-Manual arrow controls, individual project buttons, horizontal drag/touch snap and keyboard arrows remain. The pause button freezes position; reduced-motion disables autoplay and pointer steering, with a visible status label.
-
-The carousel caches stage width via ResizeObserver rather than reading card geometry each frame. No WebGL, videos, GSAP or heavy runtime dependencies.
-Pausing freezes autoplay but arrow, index and keyboard navigation remain available.
-## Contact and enhanced motion (2026-10-11)
-Hablemos navigates to #contact. Email copy button provides a visible confirmation or fallback address. 3D carousel default velocity ~0.86 projects/s, pointer steers from -0.44 to +2.16, camera pitch up to 7 degrees and yaw up to 12. Live HUD tracks motion status and lap progress. Reduced motion starts still but a user can explicitly opt into animation.
-
-Explicit navigation updates the current project label, destination link, and selected index in the same event. During an in-flight camera transition, an explicit selection is held until the carousel settles; autoplay resumes only afterward.
+This portfolio follows the site owner's specific request to rotate on load regardless of the operating system's reduced-motion setting. There is a visible and keyboard-accessible pause control. CSS reduced-motion still removes decorative transitions and disables smooth scrolling.
