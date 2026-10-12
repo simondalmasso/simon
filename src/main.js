@@ -5,8 +5,6 @@ const track = document.querySelector('#orbit-track');
 const indexText = document.querySelector('#orbit-index');
 const nameText = document.querySelector('#orbit-name');
 const openLink = document.querySelector('#orbit-open');
-const motionButton = document.querySelector('#orbit-motion');
-const motionLabel = document.querySelector('#orbit-motion-label');
 const copyEmail = document.querySelector('#copy-email');
 const copyFeedback = document.querySelector('#copy-feedback');
 const navigation = document.querySelector('#orbit-index-list');
@@ -23,6 +21,7 @@ let dragMoved = false;
 let dragStartX = 0;
 let dragStartTarget = 0;
 let pointerId = null;
+let pointerActive = false;
 let cursorAimX = 0;
 let cursorAimY = 0;
 let cursorX = 0;
@@ -34,9 +33,6 @@ let visible = true;
 let raf = 0;
 let selected = -1;
 let manualSelection = null;
-const pausePreferenceKey = 'simon-orbit-paused';
-let userPaused = false;
-try { userPaused = localStorage.getItem(pausePreferenceKey) === 'true'; } catch { /* storage disabled */ }
 const cards = [];
 const navButtons = [];
 
@@ -77,6 +73,7 @@ function updateSelected(index){
 }
 
 function calculate(){
+  track.dataset.position=position.toFixed(4);
   const width=stageWidth;
   const mobile=width<620;
   const radius=Math.min(width*(mobile?.72:.55),mobile?330:730);
@@ -114,25 +111,19 @@ function navigateTo(index){
   target=current+shortest(index,wrap(current,projects.length),projects.length);
   manualSelection=wrap(index,projects.length);
   updateSelected(manualSelection); // Visible response within the same click event.
-  holdUntil=performance.now()+3500;
+  holdUntil=performance.now()+1400;
   syncAnimation();
 }
 function shift(by){
   target=Math.round(target)+by;
   manualSelection=wrap(Math.round(target),projects.length);
   updateSelected(manualSelection);
-  holdUntil=performance.now()+3500;
+  holdUntil=performance.now()+1400;
   syncAnimation();
 }
 
-function canAuto(now){return visible&&!document.hidden&&!userPaused&&!dragging&&now>holdUntil;}
+function canAuto(now){return pointerActive&&visible&&!document.hidden&&!dragging&&now>holdUntil;}
 function syncAnimation(){
-  if(userPaused){
-    position=target; // Manual navigation still works with autoplay paused.
-    if(raf){cancelAnimationFrame(raf);raf=0;}
-    calculate();
-    return;
-  }
   if(!visible||document.hidden)return;
   if(raf)return;
   last=performance.now();
@@ -140,7 +131,7 @@ function syncAnimation(){
 }
 function frame(now){
   raf=0;
-  if(!visible||document.hidden||userPaused){
+  if(!visible||document.hidden){
     return;
   }
   const dt=Math.min(.042,Math.max(.001,(now-last)/1000||.016));
@@ -152,8 +143,9 @@ function frame(now){
   cameraPitch+=(-cursorY*7-cameraPitch)*(1-Math.exp(-dt*5.1));
   track.style.transform=`rotateX(${cameraPitch.toFixed(3)}deg) rotateY(${cameraYaw.toFixed(3)}deg)`;
   const auto=canAuto(now);
-  // Continuous orbit, plus cursor-directed speed and gentle reversal.
-  if(auto)target+=dt*clamp(.86+cursorX*1.3,-.44,2.16);
+  // No autonomous rotation. Pointer left produces negative velocity;
+  // pointer right produces positive velocity; outside/centre = zero.
+  if(auto)target+=dt*clamp(cursorX*1.6,-1.5,1.5);
   if(!dragging){
     const response=1-Math.exp(-dt*(auto?6:11));
     position+=(target-position)*response;
@@ -166,7 +158,10 @@ function frame(now){
     target-=laps*projects.length;
   }
   calculate();
-  raf=requestAnimationFrame(frame);
+  const idle=!pointerActive&&!dragging&&Math.abs(target-position)<.0003
+    &&Math.abs(cursorX)<.002&&Math.abs(cursorY)<.002
+    &&Math.abs(cameraPitch)<.015&&Math.abs(cameraYaw)<.015;
+  if(!idle)raf=requestAnimationFrame(frame);
 }
 
 const prev=document.querySelector('.orbit-prev');
@@ -180,16 +175,22 @@ scene.addEventListener('keydown',event=>{
   }
 });
 scene.addEventListener('pointerleave',()=>{
-  cursorAimX=0;
-  cursorAimY=0;
+  pointerActive=false;
+  cursorAimX=0;cursorAimY=0;
+  // Stop orbit rotation at the release point. Keep a pending manual click.
+  if(manualSelection===null)target=position;
+  syncAnimation();
 });
 scene.addEventListener('pointermove',event=>{
-  if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||dragging||userPaused)return;
+  if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||dragging)return;
   const rect=scene.getBoundingClientRect();
   const x=clamp((event.clientX-(rect.left+rect.width/2))/(rect.width*.44),-1,1);
   const y=clamp((event.clientY-(rect.top+rect.height/2))/(rect.height*.44),-1,1);
-  cursorAimX=Math.abs(x)<.055?0:x;
-  cursorAimY=Math.abs(y)<.055?0:y;
+  cursorAimX=Math.abs(x)<.09?0:x;
+  cursorAimY=Math.abs(y)<.09?0:y;
+  pointerActive=true;
+  if(manualSelection===null)holdUntil=0;
+  syncAnimation();
 },{passive:true});
 scene.addEventListener('pointerdown',event=>{
   if(event.button!==0&&event.pointerType==='mouse')return;
@@ -206,8 +207,8 @@ scene.addEventListener('pointermove',event=>{
   if(!dragging&&Math.abs(distance)>7){
     dragging=true;
     dragMoved=true;
-      cursorAimX=0;
-    cursorAimY=0;
+    pointerActive=false;
+    cursorAimX=0;cursorAimY=0;
     scene.classList.add('is-dragging');
     scene.setPointerCapture?.(event.pointerId);
   }
@@ -227,7 +228,7 @@ function endDrag(event){
   dragStartX=null;
   pointerId=null;
   scene.classList.remove('is-dragging');
-  holdUntil=performance.now()+3700;
+  holdUntil=performance.now()+500;
   syncAnimation();
 }
 scene.addEventListener('pointerup',endDrag);
@@ -240,24 +241,6 @@ scene.addEventListener('click',event=>{
   }
 },true);
 
-function updateMotion(){
-  const playing=!userPaused;
-  motionButton.disabled=false;
-  motionButton.setAttribute('aria-pressed',String(playing));
-  motionButton.setAttribute('aria-label',playing?'Pausar giro del carrusel':'Reanudar giro del carrusel');
-  motionLabel.textContent=playing?'Pausar':'Reanudar';
-  if(userPaused){
-    target=position;
-    holdUntil=Number.POSITIVE_INFINITY;
-    cursorAimX=0;cursorAimY=0;
-  } else holdUntil=0;
-  syncAnimation();
-}
-motionButton.addEventListener('click',()=>{
-  userPaused=!userPaused;
-  try { localStorage.setItem(pausePreferenceKey,String(userPaused)); } catch { /* continue without storage */ }
-  updateMotion();
-});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncAnimation();});
 new ResizeObserver(()=>{
   stageWidth=scene.clientWidth;
@@ -267,7 +250,7 @@ new ResizeObserver(()=>{
 new IntersectionObserver(([entry])=>{visible=Boolean(entry?.isIntersecting);if(visible)syncAnimation();},{threshold:.02}).observe(scene);
 updateSelected(0);
 calculate();
-updateMotion();
+syncAnimation();
 
 copyEmail?.addEventListener('click',async()=>{
   const email='simondalmasso44@gmail.com';

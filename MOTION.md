@@ -1,7 +1,9 @@
-# 3D CAROUSEL MOTION
+# MOTION — CURSOR-DIRECTED 3D REEL
 
-The eight live project screenshots rotate automatically from the first frame. Default angular speed is about 0.86 projects per second and cursor position steers direction and camera inclination. The carousel is animated with CSS 3D transforms and requestAnimationFrame, without a splash or heavy graphics libraries.
+The gallery is completely still on arrival. It does **not** autoplay.
 
-The visitor has a simple Pausar/Reanudar control. Their explicit pause choice is saved in localStorage and survives reloads; keyboard arrows, selection and drag remain available. The animation loop stops when the tab is hidden, the carousel leaves the viewport, or the user pauses.
+When a fine pointer approaches the 3D gallery, horizontal location steers angular velocity: **left = negative direction**, **right = positive direction**, centre dead zone = zero. Velocity eases in/out; pointer absence cancels directional motion and returns camera tilt to neutral. A quiet state stops requestAnimationFrame. There is no motion pause button because there is no autoplay to pause.
 
-This portfolio follows the site owner's specific request to rotate on load regardless of the operating system's reduced-motion setting. There is a visible and keyboard-accessible pause control. CSS reduced-motion still removes decorative transitions and disables smooth scrolling.
+Manual drag, arrow buttons, keyboard and project jump buttons work independently. Touch devices retain native vertical scrolling and use horizontal drag/arrows for navigation. The preview screenshots remain self-hosted, no external animation libraries.
+
+The visible hero identity is only **Simón**. The primary claim is exactly: **Desarrollo a medida de sistemas que funcionan**.
