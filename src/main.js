@@ -81,8 +81,8 @@ function calculate(){
   track.dataset.position=position.toFixed(4);
   const width=stageWidth;
   const mobile=width<620;
-  const radius=Math.min(width*(mobile?.72:.55),mobile?330:730);
-  const vertical=mobile?18:31;
+  const radius=Math.min(width*(mobile?.72:width<=900?.62:.60),mobile?330:820);
+  const vertical=mobile?18:36;
   const step=mobile?.71:.56;
   for(let i=0;i<cards.length;i++){
     const delta=shortest(i,position,cards.length);

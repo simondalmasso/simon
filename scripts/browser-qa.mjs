@@ -49,6 +49,33 @@ async function inspect(name,width,height,reduced=false){
     assert.equal(await page.locator('.hero-subtitle').innerText(),'Desarrollo a medida de sistemas que funcionan');
     const dims=await page.evaluate(()=>({a:document.documentElement.scrollWidth,b:document.documentElement.clientWidth}));
     assert.ok(dims.a<=dims.b+2,'no overflow '+JSON.stringify(dims));
+    const galleryGeometry=await page.locator('.orbit-scene').evaluate(scene=>{
+      const card=scene.querySelector('.orbit-card');
+      const cardBox=card.getBoundingClientRect();
+      return {
+        cardWidth:parseFloat(getComputedStyle(card).width),
+        cardHeight:parseFloat(getComputedStyle(card).height),
+        sceneHeight:scene.getBoundingClientRect().height,
+        cardTop:cardBox.top,
+        sceneTop:scene.getBoundingClientRect().top
+      };
+    });
+    if(width>900){
+      assert.ok(galleryGeometry.cardWidth>=width*.32 && galleryGeometry.cardWidth<=443,
+        'desktop cards are about 15% larger: '+JSON.stringify(galleryGeometry));
+      assert.ok(galleryGeometry.sceneHeight>=width*.43,
+        'desktop gallery expanded vertically: '+JSON.stringify(galleryGeometry));
+    }else if(width>620){
+      assert.ok(galleryGeometry.cardWidth>=width*.39 && galleryGeometry.cardWidth<=365,
+        'tablet cards enlarged about 10%: '+JSON.stringify(galleryGeometry));
+      assert.ok(galleryGeometry.sceneHeight>=510,
+        'tablet stage has room for larger tiles');
+    }else{
+      assert.ok(galleryGeometry.cardWidth>=215 && galleryGeometry.cardWidth<=285,
+        'mobile cards remain compact: '+JSON.stringify(galleryGeometry));
+      assert.ok(galleryGeometry.sceneHeight<=360,
+        'mobile 3D gallery height unchanged');
+    }
     for(const id of ['jobas','voy','atm','leadx','aberturas','rebeca','zungun','liva','casa-tour']){
       const r=await page.request.get(url+'previews/'+id+'.jpg');
       assert.equal(r.status(),200,'preview '+id);
@@ -135,8 +162,9 @@ async function inspect(name,width,height,reduced=false){
 }
 try{
  await inspect('desktop',1280,800);
+ await inspect('tablet',768,900);
  await inspect('mobile',375,812);
  await inspect('small-mobile',320,700);
  await inspect('reduced',1280,800,true);
- console.log(`BROWSER_QA=${count}/4 PASS`);
+ console.log(`BROWSER_QA=${count}/5 PASS`);
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
