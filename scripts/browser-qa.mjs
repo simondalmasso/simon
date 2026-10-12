@@ -40,6 +40,13 @@ async function inspect(label,width,height,reduced=false){
   }));
   assert.ok(geometry.scrollWidth<=geometry.viewport+2,`overflow ${JSON.stringify(geometry)}`);
   assert.equal(geometry.projectLinks,8);
+  assert.equal(await page.locator('.orbit-telemetry').count(),0,'no obsolete motion HUD');
+  assert.equal(await page.locator('#orbit-motion').getAttribute('aria-pressed'),'true',
+    'carousel autoplays on load for this site');
+  if(reduced){
+    assert.equal(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches),true,
+      'Chromium emulates the exact OS setting reported in the screenshot');
+  }
   assert.ok(geometry.cards.some(x=>x.includes('matrix3d')),'side cards use 3D transforms');
   assert.ok(geometry.cards.every(x=>x!=='none'),'all cards positioned');
   for(const id of ['jobas','voy','atm','leadx','aberturas','rebeca','zungun','liva']){
@@ -52,6 +59,7 @@ async function inspect(label,width,height,reduced=false){
     await page.waitForTimeout(1350);
     const advanced=await page.locator('.orbit-card').first().evaluate(el=>getComputedStyle(el).transform);
     assert.notEqual(initial,advanced,'autoplay moves even with OS reduced-motion preference');
+    await page.screenshot({path:`qa/${label}-moving.jpg`,type:'jpeg',quality:76});
   }
   if(width>900&&!reduced){
     const bounds=await page.locator('.orbit-scene').boundingBox();
