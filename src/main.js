@@ -4,6 +4,7 @@ const scene = document.querySelector('#orbit-scene');
 const track = document.querySelector('#orbit-track');
 const indexText = document.querySelector('#orbit-index');
 const nameText = document.querySelector('#orbit-name');
+const descriptionText = document.querySelector('#orbit-description');
 const openLink = document.querySelector('#orbit-open');
 const copyEmail = document.querySelector('#copy-email');
 const copyFeedback = document.querySelector('#copy-feedback');
@@ -42,10 +43,13 @@ projects.forEach((project,index)=>{
   card.dataset.id=project.id;
   card.dataset.index=String(index);
   card.innerHTML=`
-    <a href="${project.href}" target="_blank" rel="noopener" aria-label="Abrir ${project.name}">
+    <a href="${project.href}" target="_blank" rel="noopener" aria-label="Abrir ${project.name}: ${project.description}">
       <img src="/previews/${project.id}.jpg" alt="" loading="${index<3?'eager':'lazy'}" decoding="async">
       <span class="card-number">${String(index+1).padStart(2,'0')} / 08</span>
-      <span class="card-copy"><strong>${project.name}</strong><span aria-hidden="true">↗</span></span>
+      <span class="card-copy">
+        <span class="card-text"><strong>${project.name}</strong><small class="card-description">${project.description}</small></span>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </span>
     </a>`;
   const img=card.querySelector('img');
   img.addEventListener('error',()=>{img.style.display='none';card.classList.add('image-fallback');});
@@ -67,6 +71,7 @@ function updateSelected(index){
   const project=projects[index];
   indexText.textContent=String(index+1).padStart(2,'0');
   nameText.textContent=project.name;
+  descriptionText.textContent=project.description;
   openLink.href=project.href;
   navButtons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===index)));
   cards.forEach((card,i)=>card.classList.toggle('is-centered',i===index));
