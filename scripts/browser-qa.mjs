@@ -50,11 +50,11 @@ async function inspect(name,width,height,reduced=false){
       await page.mouse.move(left.x,left.y);
       await page.waitForTimeout(900);
       const movedLeft=await pos();
-      assert.ok(movedLeft<initial-.08,`cursor left must rotate left: ${initial} -> ${movedLeft}`);
+      assert.ok(movedLeft>initial+.08,`cursor left must move cards left (orbit positive): ${initial} -> ${movedLeft}`);
       await page.mouse.move(right.x,right.y);
       await page.waitForTimeout(1100);
       const movedRight=await pos();
-      assert.ok(movedRight>movedLeft+.15,`cursor right must rotate right: ${movedLeft} -> ${movedRight}`);
+      assert.ok(movedRight<movedLeft-.15,`cursor right must move cards right (orbit negative): ${movedLeft} -> ${movedRight}`);
       await page.screenshot({path:`qa/${name}-cursor.jpg`,type:'jpeg',quality:75});
       await page.mouse.move(0,0);
       await page.waitForTimeout(850);

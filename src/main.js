@@ -143,9 +143,9 @@ function frame(now){
   cameraPitch+=(-cursorY*7-cameraPitch)*(1-Math.exp(-dt*5.1));
   track.style.transform=`rotateX(${cameraPitch.toFixed(3)}deg) rotateY(${cameraYaw.toFixed(3)}deg)`;
   const auto=canAuto(now);
-  // No autonomous rotation. Pointer left produces negative velocity;
-  // pointer right produces positive velocity; outside/centre = zero.
-  if(auto)target+=dt*clamp(cursorX*1.6,-1.5,1.5);
+  // Positive orbit position makes the rendered cards slide LEFT.
+  // The sign is deliberately inverted to follow cursor direction.
+  if(auto)target+=dt*clamp(-cursorX*1.6,-1.5,1.5);
   if(!dragging){
     const response=1-Math.exp(-dt*(auto?6:11));
     position+=(target-position)*response;
@@ -158,7 +158,7 @@ function frame(now){
     target-=laps*projects.length;
   }
   calculate();
-  const idle=!pointerActive&&!dragging&&Math.abs(target-position)<.0003
+  const idle=(!pointerActive||Math.abs(cursorAimX)<.09)&&!dragging&&Math.abs(target-position)<.0003
     &&Math.abs(cursorX)<.002&&Math.abs(cursorY)<.002
     &&Math.abs(cameraPitch)<.015&&Math.abs(cameraYaw)<.015;
   if(!idle)raf=requestAnimationFrame(frame);
@@ -174,23 +174,36 @@ scene.addEventListener('keydown',event=>{
     shift(event.key==='ArrowRight'?1:-1);
   }
 });
-scene.addEventListener('pointerleave',()=>{
+function resetSteering(){
   pointerActive=false;
-  cursorAimX=0;cursorAimY=0;
-  // Stop orbit rotation at the release point. Keep a pending manual click.
+  cursorAimX=0;
+  cursorAimY=0;
   if(manualSelection===null)target=position;
   syncAnimation();
-});
-scene.addEventListener('pointermove',event=>{
+}
+window.addEventListener('pointermove',event=>{
   if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||dragging)return;
   const rect=scene.getBoundingClientRect();
+  const marginX=90,marginY=110;
+  const near=event.clientX>=rect.left-marginX&&event.clientX<=rect.right+marginX&&
+    event.clientY>=rect.top-marginY&&event.clientY<=rect.bottom+marginY;
+  if(!near){if(pointerActive)resetSteering();return;}
   const x=clamp((event.clientX-(rect.left+rect.width/2))/(rect.width*.44),-1,1);
   const y=clamp((event.clientY-(rect.top+rect.height/2))/(rect.height*.44),-1,1);
-  cursorAimX=Math.abs(x)<.09?0:x;
-  cursorAimY=Math.abs(y)<.09?0:y;
+  const extraY=Math.max(rect.top-event.clientY,event.clientY-rect.bottom,0);
+  const strength=clamp(1-extraY/marginY,0,1);
+  cursorAimX=Math.abs(x)<.09?0:x*strength;
+  cursorAimY=Math.abs(y)<.09?0:y*strength;
   pointerActive=true;
   if(manualSelection===null)holdUntil=0;
   syncAnimation();
+},{passive:true});
+document.addEventListener('pointerout',event=>{
+  if(!event.relatedTarget)resetSteering();
+});
+window.addEventListener('blur',resetSteering);
+window.addEventListener('scroll',()=>{
+  if(pointerActive)resetSteering();
 },{passive:true});
 scene.addEventListener('pointerdown',event=>{
   if(event.button!==0&&event.pointerType==='mouse')return;

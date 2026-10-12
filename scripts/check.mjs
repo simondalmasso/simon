@@ -17,7 +17,7 @@ const checks=[
  ['touch drag',js.includes('pointerdown')&&css.includes('touch-action:pan-y')],
  ['keyboard arrows',js.includes('ArrowRight')&&js.includes('ArrowLeft')],
  ['no obsolete motion switch',!html.includes('id="orbit-motion"')&&!js.includes('userPaused')],
- ['cursor-only motion',js.includes('pointerActive&&visible')&&js.includes('cursorX*1.6')&&!js.includes('.86+cursorX')],
+ ['cursor-only motion',js.includes('pointerActive&&visible')&&js.includes('-cursorX*1.6')&&!js.includes('.86+cursorX')],
  ['camera tracks cursor',js.includes('cameraYaw')&&js.includes('cursorAimX')&&js.includes('track.style.transform')],
  ['many-lap wrap',js.includes('Math.trunc(position/projects.length)')&&js.includes('wrap(a-b+length/2,length)')],
  ['reduced motion CSS support',css.includes('prefers-reduced-motion:reduce')],
@@ -29,7 +29,7 @@ const checks=[
  ['copyable email',html.includes('id="copy-email"')&&js.includes('navigator.clipboard.writeText')],
  ['no technical motion HUD',!html.includes('orbit-live-status')&&!html.includes('MOVIMIENTO REDUCIDO')],
  ['no OS autoplay lock',!js.includes('motionReduced()')&&!js.includes('reduced.matches')],
- ['pointer left and right',js.includes('pointerActive=false')&&js.includes('Math.abs(x)<.09')],
+ ['pointer proximity left/right',js.includes('pointerActive=false')&&js.includes('marginX=90,marginY=110')&&js.includes('-cursorX*1.6')],
  ['contact whatsapp',html.includes('wa.me/543425391278')],
  ['no iframes',!html.includes('<iframe')&&!js.includes('<iframe')],
  ['no external runtime',!js.includes("from 'three'")&&!js.includes("from 'gsap'")]
