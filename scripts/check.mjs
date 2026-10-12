@@ -31,6 +31,8 @@ const checks=[
  ['no technical motion HUD',!html.includes('orbit-live-status')&&!html.includes('MOVIMIENTO REDUCIDO')],
  ['no OS autoplay lock',!js.includes('motionReduced()')&&!js.includes('reduced.matches')],
  ['pointer proximity left/right',js.includes('pointerActive=false')&&js.includes('marginX=90,marginY=110')&&js.includes('-cursorX*1.6')],
+ ['official WhatsApp logo',html.includes('shortcut-whatsapp')&&html.includes('fill="currentColor"')&&html.includes('M17.472 14.382c-.297-.149')],
+ ['WhatsApp mobile touch target',css.includes('.shortcut-link{width:44px;height:44px}')],
  ['contact whatsapp',html.includes('wa.me/543425391278')],
  ['no iframes',!html.includes('<iframe')&&!js.includes('<iframe')],
  ['no external runtime',!js.includes("from 'three'")&&!js.includes("from 'gsap'")]

@@ -80,6 +80,30 @@ async function inspect(name,width,height,reduced=false){
     assert.equal(await whatsapp.getAttribute('href'),'https://wa.me/543425391278','direct WhatsApp link');
     assert.ok((await mail.getAttribute('aria-label')).includes('email'),'accessible mail icon');
     assert.ok((await whatsapp.getAttribute('aria-label')).includes('WhatsApp'),'accessible WhatsApp icon');
+    // Regression: previous hand-drawn logo looked wrong despite a valid URL.
+    const logo=whatsapp.locator('svg');
+    assert.equal(await logo.getAttribute('viewBox'),'0 0 24 24','official WhatsApp aspect ratio');
+    assert.equal(await logo.getAttribute('fill'),'currentColor','logo uses solid canonical fill');
+    assert.equal(await logo.locator('path').count(),1,'recognizable single brand silhouette');
+    const brandGeometry=await whatsapp.evaluate(el=>{
+      const svg=el.querySelector('svg');
+      const icon=svg.getBoundingClientRect();
+      const bounds=el.getBoundingClientRect();
+      const hit=document.elementFromPoint(bounds.left+bounds.width/2,bounds.top+bounds.height/2);
+      return {
+        width:bounds.width,height:bounds.height,iconWidth:icon.width,iconHeight:icon.height,
+        hit:hit===el||el.contains(hit),
+        fill:getComputedStyle(svg).fill,
+        aligned:Math.abs((icon.left+icon.width/2)-(bounds.left+bounds.width/2))<1
+          && Math.abs((icon.top+icon.height/2)-(bounds.top+bounds.height/2))<1
+      };
+    });
+    assert.ok(brandGeometry.width>=44 && brandGeometry.height>=44,'WhatsApp touch target minimum 44px');
+    assert.ok(brandGeometry.iconWidth>=22 && brandGeometry.iconHeight>=22,'legible brand mark');
+    assert.ok(brandGeometry.hit,'touch center hits WhatsApp link and not an overlay');
+    assert.ok(brandGeometry.aligned,'logo centered in button');
+    assert.ok(brandGeometry.fill==='rgb(255, 255, 255)','white mark over green button');
+    await page.locator('.topbar').screenshot({path:`qa/${name}-contact-icons.png`});
     await page.locator('#copy-email').click();
     assert.ok((await page.locator('#copy-feedback').innerText()).includes('simondalmasso44@gmail.com'));
     await page.screenshot({path:`qa/${name}-page.jpg`,type:'jpeg',quality:68,fullPage:true});
@@ -90,6 +114,7 @@ async function inspect(name,width,height,reduced=false){
 try{
  await inspect('desktop',1280,800);
  await inspect('mobile',375,812);
+ await inspect('small-mobile',320,700);
  await inspect('reduced',1280,800,true);
- console.log(`BROWSER_QA=${count}/3 PASS`);
+ console.log(`BROWSER_QA=${count}/4 PASS`);
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

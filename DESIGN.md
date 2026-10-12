@@ -7,3 +7,6 @@ Design tokens: paper `#f8f8f5`, charcoal `#171a18`, muted `#686e6c`, acid highli
 Above the fold: no intro; editorial centered name and concise value proposition, followed immediately by a curved cinematic gallery with 3D screenshot cards. Card labels remain on-image and are readable on dark fades. Sections after hero preserve services and contact links.
 
 Touch: allow vertical scroll with `touch-action:pan-y` and horizontal drag. Reduced motion: static project selection, no auto-rotation. Accessible buttons, keyboard arrows and current-project link.
+
+## Contact icon correction
+WhatsApp header mark uses the official single-path WhatsApp logo from Simple Icons (CC0), centered in a 44px direct contact link on small screens. The former custom SVG was removed.
