@@ -7,4 +7,5 @@ export const projects = [
   { id: 'rebeca', name: 'REBECA', description: 'Tienda de ropa', href: 'https://rebeca-sf.simondalmasso44.workers.dev/', embeddable: true },
   { id: 'zungun', name: 'ZUNGUN', description: 'Sistema de operaciones y mensajería', href: 'https://zungun.simondalmasso44.workers.dev/', embeddable: false },
   { id: 'liva', name: 'LiVa', description: 'Explorador de TV y streaming', href: 'https://liva.simondalmasso44.workers.dev/', embeddable: true },
+  { id: 'casa-tour', name: 'Casa Tour', description: 'Recorridos 3D interactivos de propiedades', href: 'https://casa-tour.simondalmasso44.workers.dev/', embeddable: true },
 ];

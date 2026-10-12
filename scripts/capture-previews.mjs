@@ -3,8 +3,8 @@ import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { projects } from '../src/data/projects.js';
 
-// Stage the new screenshot before placing the ninth card into production.
-const targets = [...projects, { id: 'casa-tour', href: 'https://casa-tour.simondalmasso44.workers.dev/' }];
+// Refresh exactly the nine projects from the canonical dataset.
+const targets = projects;
 const folder = new URL('../previews/', import.meta.url);
 await mkdir(folder,{recursive:true});
 const browser = await chromium.launch({headless:true,args:['--no-sandbox']});

@@ -7,11 +7,13 @@ const [html,css,js,build]=await Promise.all([
   readFile(new URL('./build.mjs',import.meta.url),'utf8')
 ]);
 const checks=[
- ['eight projects',projects.length===8],
+ ['nine projects including Casa Tour',projects.length===9&&projects.some(p=>p.id==='casa-tour'&&p.href==='https://casa-tour.simondalmasso44.workers.dev/')],
  ['semantic work section',html.includes('id="work"')],
  ['exactly one heading',html.split('<h1').length===2],
  ['hero identity is Simón',html.includes('<h1 id="hero-title">Simón</h1>')],
  ['exact service claim',html.includes('Desarrollo a medida de sistemas que funcionan')],
+ ['studio metadata placed below Simón',html.indexOf('id="hero-title"')<html.indexOf('class="hero-overline"')&&html.indexOf('class="hero-overline"')<html.indexOf('class="hero-subtitle"')],
+ ['accurate 09 total',html.includes('Nueve proyectos web')&&html.includes('Nueve proyectos reales.')],
  ['3D carousel',html.includes('orbit-scene')&&css.includes('perspective:1150px')],
  ['CSS 3D transforms',js.includes('rotateY(')&&js.includes('translate3d(')],
  ['touch drag',js.includes('pointerdown')&&css.includes('touch-action:pan-y')],

@@ -45,7 +45,7 @@ projects.forEach((project,index)=>{
   card.innerHTML=`
     <a href="${project.href}" target="_blank" rel="noopener" aria-label="Abrir ${project.name}: ${project.description}">
       <img src="/previews/${project.id}.jpg" alt="" loading="${index<3?'eager':'lazy'}" decoding="async">
-      <span class="card-number">${String(index+1).padStart(2,'0')} / 08</span>
+      <span class="card-number">${String(index+1).padStart(2,'0')} / ${String(projects.length).padStart(2,'0')}</span>
       <span class="card-copy">
         <span class="card-text"><strong>${project.name}</strong><small class="card-description">${project.description}</small></span>
         <span class="card-arrow" aria-hidden="true">↗</span>
