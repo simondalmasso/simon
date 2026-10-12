@@ -1,14 +1,17 @@
 import { mkdir, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { projects } from '../src/data/projects.js';
 
+// Stage the new screenshot before placing the ninth card into production.
+const targets = [...projects, { id: 'casa-tour', href: 'https://casa-tour.simondalmasso44.workers.dev/' }];
 const folder = new URL('../previews/', import.meta.url);
 await mkdir(folder,{recursive:true});
 const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
 let count = 0;
 const failures = [];
 try {
-  for(const project of projects) {
+  for(const project of targets) {
     const context = await browser.newContext({
       viewport:{width:1280,height:800},
       deviceScaleFactor:1,
@@ -32,5 +35,5 @@ try {
     } finally { await context.close(); }
   }
 } finally { await browser.close(); }
-console.log(`CAPTURED ${count}/${projects.length}; failures: ${failures.join(',')||'none'}`);
-if(count<6)process.exitCode=1;
+console.log(`CAPTURED ${count}/${targets.length}; failures: ${failures.join(',')||'none'}`);
+if(count < 7 || !existsSync(new URL('../previews/casa-tour.jpg',import.meta.url))) process.exitCode=1;
