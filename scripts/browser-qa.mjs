@@ -32,13 +32,18 @@ async function inspect(name,width,height,reduced=false){
     await page.locator('.orbit-card').first().waitFor();
     assert.equal(await page.locator('.orbit-card').count(),9);
     assert.equal(await page.locator('.card-description').count(),9,'all cards show a project function');
+    const expectedDescriptions={"jobas":"Asistente de búsqueda laboral remota y local","voy":"App de movilidad argentina","atm":"Panel de oportunidades, ingresos y cobros","leadx":"CRM para clientes y seguimiento comercial","aberturas":"Catálogo y pedidos de aberturas en Santa Fe","rebeca":"Tienda e-commerce de ropa femenina","zungun":"Sistema de operaciones y mensajería offline","liva":"Explorador de TV en vivo y videos a demanda","casa-tour":"Tours 3D de viviendas para inmobiliarias"};
+    for(const [id,description] of Object.entries(expectedDescriptions)){
+      assert.equal(await page.locator(`.orbit-card[data-id="${id}"] .card-description`).innerText(),description,
+        `specific visible description for ${id}`);
+    }
     assert.equal(await page.locator('.orbit-total').innerText(),'/ 09');
     const overlineFollowsName=await page.locator('.hero-heading').evaluate(el=>{
       const h=el.querySelector('h1'),line=el.querySelector('.hero-overline');
       return Boolean(h.compareDocumentPosition(line)&Node.DOCUMENT_POSITION_FOLLOWING);
     });
     assert.ok(overlineFollowsName,'studio/location metadata below Simón');
-    assert.equal(await page.locator('#orbit-description').innerText(),'Asistente de búsqueda laboral');
+    assert.equal(await page.locator('#orbit-description').innerText(),'Asistente de búsqueda laboral remota y local');
     assert.equal(await page.locator('.orbit-motion').count(),0,'obsolete pause removed');
     assert.equal(await page.locator('h1').innerText(),'Simón');
     assert.equal(await page.locator('.hero-subtitle').innerText(),'Desarrollo a medida de sistemas que funcionan');
@@ -74,13 +79,16 @@ async function inspect(name,width,height,reduced=false){
     assert.equal(await page.locator('#orbit-name').innerText(),'JOBAS');
     await page.locator('.orbit-next').click();
     assert.equal(await page.locator('#orbit-name').innerText(),'VOY','manual next');
-    assert.equal(await page.locator('#orbit-description').innerText(),'App de movilidad');
+    assert.equal(await page.locator('#orbit-description').innerText(),'App de movilidad argentina');
     await page.locator('.orbit-index button').nth(4).click();
     assert.equal(await page.locator('#orbit-name').innerText(),'Aberturas Avenida','manual index');
-    assert.equal(await page.locator('#orbit-description').innerText(),'Catálogo de puertas y ventanas');
+    assert.equal(await page.locator('#orbit-description').innerText(),'Catálogo y pedidos de aberturas en Santa Fe');
+    await page.locator('.orbit-index button').nth(5).click();
+    assert.equal(await page.locator('#orbit-name').innerText(),'REBECA');
+    assert.equal(await page.locator('#orbit-description').innerText(),'Tienda e-commerce de ropa femenina');
     await page.locator('.orbit-index button').nth(8).click();
     assert.equal(await page.locator('#orbit-name').innerText(),'Casa Tour','ninth project selectable');
-    assert.equal(await page.locator('#orbit-description').innerText(),'Recorridos 3D interactivos de propiedades');
+    assert.equal(await page.locator('#orbit-description').innerText(),'Tours 3D de viviendas para inmobiliarias');
     assert.equal(await page.locator('#orbit-open').getAttribute('href'),'https://casa-tour.simondalmasso44.workers.dev/');
     assert.equal(await page.locator('.orbit-card[data-id="casa-tour"]').count(),1);
     const mail=page.locator('.shortcut-mail');

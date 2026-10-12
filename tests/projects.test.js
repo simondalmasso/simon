@@ -16,15 +16,15 @@ test('all project links are unique and HTTPS', () => {
 });
 test('all nine project functions are explicit and concise', () => {
   const expected = new Map([
-    ['jobas','Asistente de búsqueda laboral'],
-    ['voy','App de movilidad'],
-    ['atm','Panel de oportunidades e ingresos'],
-    ['leadx','CRM para gestionar clientes'],
-    ['aberturas','Catálogo de puertas y ventanas'],
-    ['rebeca','Tienda de ropa'],
-    ['zungun','Sistema de operaciones y mensajería'],
-    ['liva','Explorador de TV y streaming'],
-    ['casa-tour','Recorridos 3D interactivos de propiedades']
+    ['jobas','Asistente de búsqueda laboral remota y local'],
+    ['voy','App de movilidad argentina'],
+    ['atm','Panel de oportunidades, ingresos y cobros'],
+    ['leadx','CRM para clientes y seguimiento comercial'],
+    ['aberturas','Catálogo y pedidos de aberturas en Santa Fe'],
+    ['rebeca','Tienda e-commerce de ropa femenina'],
+    ['zungun','Sistema de operaciones y mensajería offline'],
+    ['liva','Explorador de TV en vivo y videos a demanda'],
+    ['casa-tour','Tours 3D de viviendas para inmobiliarias']
   ]);
   for(const project of projects){
     assert.equal(project.description,expected.get(project.id));
