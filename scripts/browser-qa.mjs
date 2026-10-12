@@ -85,6 +85,9 @@ async function inspect(name,width,height,reduced=false){
     assert.equal(await logo.getAttribute('viewBox'),'0 0 24 24','official WhatsApp aspect ratio');
     assert.equal(await logo.getAttribute('fill'),'currentColor','logo uses solid canonical fill');
     assert.equal(await logo.locator('path').count(),1,'recognizable single brand silhouette');
+    // Navigation checks may have scrolled the topbar outside the viewport.
+    // Bring the actual touch target onscreen before using elementFromPoint.
+    await whatsapp.scrollIntoViewIfNeeded();
     const brandGeometry=await whatsapp.evaluate(el=>{
       const svg=el.querySelector('svg');
       const icon=svg.getBoundingClientRect();
