@@ -1,6 +1,19 @@
-# SIMONweb
+# Simon Dalmasso — Personal Portfolio
 
-Personal portfolio of Simón Dalmasso. Deployed at https://simon.simondalmasso44.workers.dev/
+Personal portfolio of **Simon Dalmasso (Simón Dalmasso)**, an inventor and software builder based in Santa Fe, Argentina.
+
+- **Website:** https://simon.simondalmasso44.workers.dev/
+- **GitHub:** https://github.com/simondalmasso
+
+Selected work spans AI tools and agentic workspaces, software verification, automation, CRM, mobility and web applications. Project maturity and release evidence are documented in each repository; a published repository or deployed interface is not, by itself, a claim that every feature is production-ready.
+
+## Selected projects
+
+- [BOQA — software verification](https://github.com/simondalmasso/boQA-ai-verification)
+- [0liviA — personal AI workspace](https://github.com/simondalmasso/0liviA)
+- [MiMicus iAffice — governed multi-agent runtime](https://github.com/simondalmasso/MiMicus-iAffice)
+- [VOY — source-backed mobility platform](https://github.com/simondalmasso/VOY)
+- [LeadX — commercial signal desk](https://github.com/simondalmasso/Leadx)
 
 ## UI
 
