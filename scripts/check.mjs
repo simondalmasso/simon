@@ -40,6 +40,9 @@ const checks=[
  ['WhatsApp mobile touch target',css.includes('.shortcut-link{width:44px;height:44px}')],
  ['contact whatsapp',html.includes('wa.me/543425391278')],
  ['no iframes',!html.includes('<iframe')&&!js.includes('<iframe')],
- ['no external runtime',!js.includes("from 'three'")&&!js.includes("from 'gsap'")]
+ ['no external runtime',!js.includes("from 'three'")&&!js.includes("from 'gsap'")],
+ ['canonical portfolio URL',html.includes('<link rel="canonical" href="https://simon.simondalmasso44.workers.dev/">')],
+ ['Simon Dalmasso person metadata',html.includes('"@type": "Person"')&&html.includes('"name": "Simon Dalmasso"')&&html.includes('"alternateName": "Simón Dalmasso"')],
+ ['GitHub identity link',html.includes('href="https://github.com/simondalmasso"')]
 ];
 for(const [name,ok] of checks){if(!ok)throw Error('FAIL '+name);console.log('PASS '+name);}
