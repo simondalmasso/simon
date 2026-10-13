@@ -43,6 +43,7 @@ const checks=[
  ['no external runtime',!js.includes("from 'three'")&&!js.includes("from 'gsap'")],
  ['canonical portfolio URL',html.includes('<link rel="canonical" href="https://simon.simondalmasso44.workers.dev/">')],
  ['Simon Dalmasso person metadata',html.includes('"@type": "Person"')&&html.includes('"name": "Simon Dalmasso"')&&html.includes('"alternateName": "Simón Dalmasso"')],
- ['GitHub identity link',html.includes('href="https://github.com/simondalmasso"')]
+ ['GitHub identity link',html.includes('href="https://github.com/simondalmasso"')],
+ ['LinkedIn identity link',html.includes('href="https://linkedin.com/in/simondalmasso"')&&html.includes('"https://linkedin.com/in/simondalmasso"')]
 ];
 for(const [name,ok] of checks){if(!ok)throw Error('FAIL '+name);console.log('PASS '+name);}

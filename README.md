@@ -4,6 +4,7 @@ Personal portfolio of **Simon Dalmasso (Simón Dalmasso)**, an inventor and soft
 
 - **Website:** https://simon.simondalmasso44.workers.dev/
 - **GitHub:** https://github.com/simondalmasso
+- **LinkedIn:** https://linkedin.com/in/simondalmasso
 
 Selected work spans AI tools and agentic workspaces, software verification, automation, CRM, mobility and web applications. Project maturity and release evidence are documented in each repository; a published repository or deployed interface is not, by itself, a claim that every feature is production-ready.
 

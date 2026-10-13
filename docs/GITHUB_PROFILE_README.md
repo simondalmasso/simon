@@ -6,6 +6,7 @@ I build digital products across AI tooling, automation, software verification, w
 
 - **Portfolio:** https://simon.simondalmasso44.workers.dev/
 - **GitHub:** https://github.com/simondalmasso
+- **LinkedIn:** https://linkedin.com/in/simondalmasso
 
 ## Selected projects
 
