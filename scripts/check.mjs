@@ -7,13 +7,13 @@ const [html,css,js,build]=await Promise.all([
   readFile(new URL('./build.mjs',import.meta.url),'utf8')
 ]);
 const checks=[
- ['nine projects including Casa Tour',projects.length===9&&projects.some(p=>p.id==='casa-tour'&&p.href==='https://casa-tour.simondalmasso44.workers.dev/')],
+ ['ten projects including Casa Tour and aMira',projects.length===10&&projects.some(p=>p.id==='casa-tour'&&p.href==='https://casa-tour.simondalmasso44.workers.dev/')&&projects.some(p=>p.id==='amira'&&p.href==='https://amira.simondalmasso44.workers.dev/')],
  ['semantic work section',html.includes('id="work"')],
  ['exactly one heading',html.split('<h1').length===2],
  ['hero identity is Simón',html.includes('<h1 id="hero-title">Simón</h1>')],
  ['exact service claim',html.includes('Desarrollo a medida de sistemas que funcionan')],
  ['studio metadata placed below Simón',html.indexOf('id="hero-title"')<html.indexOf('class="hero-overline"')&&html.indexOf('class="hero-overline"')<html.indexOf('class="hero-subtitle"')],
- ['accurate 09 total',html.includes('Nueve proyectos web')&&html.includes('Nueve proyectos reales.')],
+ ['accurate 10 total',html.includes('Diez proyectos web')&&html.includes('Diez proyectos reales.')],
  ['3D carousel',html.includes('orbit-scene')&&css.includes('perspective:1250px')],
  ['larger desktop 3D tiles',css.includes('--orb-w:clamp(282px,32.2vw,443px)')],
  ['larger tablet tiles',css.includes('--orb-w:clamp(290px,39.6vw,365px)')],
@@ -32,6 +32,8 @@ const checks=[
  ['contact email',html.includes('mailto:simondalmasso44@gmail.com')],
  ['one-tap header contact links',html.includes('shortcut-mail')&&html.includes('shortcut-whatsapp')&&!html.includes('class="top-contact"')],
  ['project descriptions on cards and in focus',js.includes('project.description')&&html.includes('id="orbit-description"')],
+ ['aMira has a specific banking description',projects.some(p=>p.id==='amira'&&p.name==='aMira'&&p.description==='Inteligencia bancaria y productos financieros')],
+ ['no AI claims in public metadata',!(/\bAI\b|inteligencia artificial|agentic/i.test(html))],
  ['copyable email',html.includes('id="copy-email"')&&js.includes('navigator.clipboard.writeText')],
  ['no technical motion HUD',!html.includes('orbit-live-status')&&!html.includes('MOVIMIENTO REDUCIDO')],
  ['no OS autoplay lock',!js.includes('motionReduced()')&&!js.includes('reduced.matches')],

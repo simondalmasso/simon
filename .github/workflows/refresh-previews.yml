@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/refresh-previews.yml
       - scripts/capture-previews.mjs
+      - src/data/projects.js
 
 permissions:
   contents: write
@@ -32,7 +33,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright
           npx playwright install chromium --with-deps
-      - name: Capture nine actual project pages
+      - name: Capture all live project pages
         run: node scripts/capture-previews.mjs
       - name: Store screenshots in repository
         run: |
@@ -45,8 +46,10 @@ jobs:
             git pull --rebase origin main
             git push origin HEAD:main
           fi
-      - name: Ensure new Casa Tour screenshot exists
-        run: test -s previews/casa-tour.jpg
+      - name: Ensure new project screenshots exist
+        run: |
+          test -s previews/casa-tour.jpg
+          test -s previews/amira.jpg
       - name: Verify and build
         run: npm run verify
       - name: Deploy snapshots to Cloudflare
@@ -57,4 +60,6 @@ jobs:
           curl --fail --silent --show-error "https://simon.simondalmasso44.workers.dev/" | grep -Fq 'SIMÓN'
           curl --fail --silent --show-error -I "https://simon.simondalmasso44.workers.dev/previews/jobas.jpg" | grep -iq '^HTTP/.*200'
           curl --fail --silent --show-error -I "https://simon.simondalmasso44.workers.dev/previews/casa-tour.jpg" | grep -iq '^HTTP/.*200'
+          curl --fail --silent --show-error -I "https://simon.simondalmasso44.workers.dev/previews/amira.jpg" | grep -iq '^HTTP/.*200'
+          curl --fail --silent --show-error 'https://simon.simondalmasso44.workers.dev/src/data/projects.js' | grep -Fq "id: 'amira'"
           echo "SNAPSHOTS_LIVE=YES"

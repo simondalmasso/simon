@@ -8,4 +8,5 @@ export const projects = [
   { id: 'zungun', name: 'ZUNGUN', description: 'Sistema de operaciones y mensajería offline', href: 'https://zungun.simondalmasso44.workers.dev/', embeddable: false },
   { id: 'liva', name: 'LiVa', description: 'Explorador de TV en vivo y videos a demanda', href: 'https://liva.simondalmasso44.workers.dev/', embeddable: true },
   { id: 'casa-tour', name: 'Casa Tour', description: 'Tours 3D de viviendas para inmobiliarias', href: 'https://casa-tour.simondalmasso44.workers.dev/', embeddable: true },
+  { id: 'amira', name: 'aMira', description: 'Inteligencia bancaria y productos financieros', href: 'https://amira.simondalmasso44.workers.dev/', embeddable: true },
 ];

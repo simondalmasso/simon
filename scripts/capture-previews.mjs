@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { projects } from '../src/data/projects.js';
 
-// Refresh exactly the nine projects from the canonical dataset.
+// Refresh every project from the canonical dataset, including the newest addition.
 const targets = projects;
 const folder = new URL('../previews/', import.meta.url);
 await mkdir(folder,{recursive:true});
@@ -36,4 +36,4 @@ try {
   }
 } finally { await browser.close(); }
 console.log(`CAPTURED ${count}/${targets.length}; failures: ${failures.join(',')||'none'}`);
-if(count < 7 || !existsSync(new URL('../previews/casa-tour.jpg',import.meta.url))) process.exitCode=1;
+if(count < 8 || !existsSync(new URL('../previews/casa-tour.jpg',import.meta.url)) || !existsSync(new URL('../previews/amira.jpg',import.meta.url))) process.exitCode=1;
