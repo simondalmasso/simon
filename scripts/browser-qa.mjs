@@ -12,9 +12,13 @@ const server=createServer(async(req,res)=>{
     const path=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
     const local=resolve(root,'.'+(path==='/'?'/index.html':path));
     if(local!==root&&!local.startsWith(root+sep)){res.writeHead(403);res.end();return;}
+    const body=await readFile(local);
     res.writeHead(200,{'Content-Type':types[extname(local)]||'application/octet-stream'});
-    res.end(await readFile(local));
-  }catch{res.writeHead(404);res.end();}
+    res.end(body);
+  }catch{
+    if(!res.headersSent)res.writeHead(404);
+    res.end();
+  }
 });
 server.listen(0,'127.0.0.1'); await once(server,'listening');
 const url=`http://127.0.0.1:${server.address().port}/`;
