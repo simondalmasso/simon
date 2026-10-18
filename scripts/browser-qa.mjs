@@ -82,7 +82,6 @@ async function inspect(name,width,height,reduced=false){
     }
     for(const id of ['jobas','voy','atm','leadx','aberturas','rebeca','zungun','liva','casa-tour','amira','0livia']){
       const r=await page.request.get(url+'previews/'+id+'.jpg');
-      if(id==='0livia' && r.status()===404){console.warn('PREVIEW_PENDING 0livia: waiting for capture workflow');continue;}
       assert.equal(r.status(),200,'preview '+id);
     }
     const initial=await pos();
