@@ -9,4 +9,5 @@ export const projects = [
   { id: 'liva', name: 'LiVa', description: 'Explorador de TV en vivo y videos a demanda', href: 'https://liva.simondalmasso44.workers.dev/', embeddable: true },
   { id: 'casa-tour', name: 'Casa Tour', description: 'Tours 3D de viviendas para inmobiliarias', href: 'https://casa-tour.simondalmasso44.workers.dev/', embeddable: true },
   { id: 'amira', name: 'aMira', description: 'Inteligencia bancaria y productos financieros', href: 'https://amira.simondalmasso44.workers.dev/', embeddable: true },
+  { id: '0livia', name: '0liviA', description: 'Espacio personal de trabajo y herramientas', href: 'https://0livia.simondalmasso44.workers.dev/', embeddable: true },
 ];

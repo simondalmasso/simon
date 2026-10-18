@@ -50,6 +50,7 @@ jobs:
         run: |
           test -s previews/casa-tour.jpg
           test -s previews/amira.jpg
+          test -s previews/0livia.jpg
       - name: Verify and build
         run: npm run verify
       - name: Deploy snapshots to Cloudflare
@@ -61,5 +62,7 @@ jobs:
           curl --fail --silent --show-error -I "https://simon.simondalmasso44.workers.dev/previews/jobas.jpg" | grep -iq '^HTTP/.*200'
           curl --fail --silent --show-error -I "https://simon.simondalmasso44.workers.dev/previews/casa-tour.jpg" | grep -iq '^HTTP/.*200'
           curl --fail --silent --show-error -I "https://simon.simondalmasso44.workers.dev/previews/amira.jpg" | grep -iq '^HTTP/.*200'
+          curl --fail --silent --show-error -I "https://simon.simondalmasso44.workers.dev/previews/0livia.jpg" | grep -iq '^HTTP/.*200'
           curl --fail --silent --show-error 'https://simon.simondalmasso44.workers.dev/src/data/projects.js' | grep -Fq "id: 'amira'"
+          curl --fail --silent --show-error 'https://simon.simondalmasso44.workers.dev/src/data/projects.js' | grep -Fq "id: '0livia'"
           echo "SNAPSHOTS_LIVE=YES"

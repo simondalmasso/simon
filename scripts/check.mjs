@@ -7,13 +7,13 @@ const [html,css,js,build]=await Promise.all([
   readFile(new URL('./build.mjs',import.meta.url),'utf8')
 ]);
 const checks=[
- ['ten projects including Casa Tour and aMira',projects.length===10&&projects.some(p=>p.id==='casa-tour'&&p.href==='https://casa-tour.simondalmasso44.workers.dev/')&&projects.some(p=>p.id==='amira'&&p.href==='https://amira.simondalmasso44.workers.dev/')],
+ ['eleven projects including Casa Tour, aMira and 0liviA',projects.length===11&&projects.some(p=>p.id==='casa-tour'&&p.href==='https://casa-tour.simondalmasso44.workers.dev/')&&projects.some(p=>p.id==='amira'&&p.href==='https://amira.simondalmasso44.workers.dev/')&&projects.some(p=>p.id==='0livia'&&p.name==='0liviA'&&p.href==='https://0livia.simondalmasso44.workers.dev/'&&p.description==='Espacio personal de trabajo y herramientas')],
  ['semantic work section',html.includes('id="work"')],
  ['exactly one heading',html.split('<h1').length===2],
  ['hero identity is Simón',html.includes('<h1 id="hero-title">Simón</h1>')],
  ['exact service claim',html.includes('Desarrollo a medida de sistemas que funcionan')],
  ['studio metadata placed below Simón',html.indexOf('id="hero-title"')<html.indexOf('class="hero-overline"')&&html.indexOf('class="hero-overline"')<html.indexOf('class="hero-subtitle"')],
- ['accurate 10 total',html.includes('Diez proyectos web')&&html.includes('Diez proyectos reales.')],
+ ['accurate 11 total',html.includes('Once proyectos web')&&html.includes('Once proyectos reales.')],
  ['3D carousel',html.includes('orbit-scene')&&css.includes('perspective:1250px')],
  ['larger desktop 3D tiles',css.includes('--orb-w:clamp(282px,32.2vw,443px)')],
  ['larger tablet tiles',css.includes('--orb-w:clamp(290px,39.6vw,365px)')],

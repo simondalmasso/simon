@@ -17,7 +17,7 @@ Selected work spans software verification, automation, CRM, mobility, e-commerce
 
 ## UI
 
-Light editorial landing with an immersive **cylindrical 3D website carousel** inspired by the layout language of MotionSites Custom Spaces (not copied). Ten real project screenshots are served as static JPEG assets from `previews/`, with direct HTTPS destinations in `src/data/projects.js`.
+Light editorial landing with an immersive **cylindrical 3D website carousel** inspired by the layout language of MotionSites Custom Spaces (not copied). Eleven real project screenshots are served as static JPEG assets from `previews/`, with direct HTTPS destinations in `src/data/projects.js`.
 
 Carousel runs on native CSS 3D transforms + vanilla JS with no WebGL or animation-library dependency. It stays still until a pointer approaches, then moves left/right according to cursor proximity. Touch drag, previous/next arrows, project jump buttons and keyboard arrows remain available; animation pauses when offscreen or the tab is hidden. All project links remain accessible via the focused card and the current-project button. No splash screen.
 
@@ -33,3 +33,8 @@ Carousel runs on native CSS 3D transforms + vanilla JS with no WebGL or animatio
 ## Project 10 — aMira
 
 [aMira](https://amira.simondalmasso44.workers.dev/) is a banking-information explorer for Argentina, presenting financial institutions and documented products with source context from the BCRA and institutional pages. Its paper mode does not execute real transactions; displayed information is not a promise of availability or future return.
+
+
+## Project 11 — 0liviA
+
+[0liviA](https://0livia.simondalmasso44.workers.dev/) is presented here as a personal digital workspace and tools project. The portfolio links to the public shell; it does not imply that private runtime services are available just because the interface is deployed.
